@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hồ Quốc iOS – Kéo Tâm Mượt</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --card: #111118;
+    --border: #1e1e2e;
+    --accent: #7c6aff;
+    --accent2: #ff6a6a;
+    --text: #e8e8f0;
+    --muted: #555570;
+    --green: #4fffb0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Background mesh */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 20%, rgba(124,106,255,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 80% 80%, rgba(255,106,106,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 60% at 50% 50%, rgba(79,255,176,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    padding: 24px 20px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(124,106,255,0.15);
+    border: 1px solid rgba(124,106,255,0.3);
+    border-radius: 99px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .badge span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 28px;
+    line-height: 1.5;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .features {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .feat {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #aaa;
+    animation: fadeUp 0.6s ease both;
+  }
+  .feat:nth-child(1){animation-delay:0.1s}
+  .feat:nth-child(2){animation-delay:0.2s}
+  .feat:nth-child(3){animation-delay:0.3s}
+
+  .feat .icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(124,106,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .feat strong { display: block; color: var(--text); font-size: 13px; margin-bottom: 2px; }
+
+  .btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent) 0%, #a06aff 100%);
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    box-shadow: 0 4px 24px rgba(124,106,255,0.35);
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(124,106,255,0.5); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .btn .spinner {
+    display: none;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    position: absolute; right: 20px; top: 50%; margin-top: -8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status {
+    margin-top: 14px;
+    text-align: center;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    min-height: 18px;
+    animation: fadeUp 0.4s ease both;
+  }
+  .status.ok  { color: var(--green); }
+  .status.err { color: var(--accent2); }
+
+  .zalo-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(0,104,255,0.35);
+    background: rgba(0,104,255,0.1);
+    color: #5aacff;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 2px 16px rgba(0,104,255,0.1);
+    animation: fadeUp 0.6s 0.55s ease both;
+  }
+  .zalo-btn:hover {
+    background: rgba(0,104,255,0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0,104,255,0.25);
+  }
+  .zalo-btn .arrow {
+    margin-left: auto;
+    font-size: 16px;
+    transition: transform 0.2s;
+  }
+  .zalo-btn:hover .arrow { transform: translateX(4px); }
+
+  .note {
+    margin-top: 20px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    line-height: 1.6;
+    animation: fadeUp 0.6s 0.5s ease both;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 24px 0;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="badge"><span></span> iOS Profile v1.0</div>
+
+  <h1>Hồ Quốc iOS<br>Kéo Tâm Mượt</h1>
+  <p class="sub">Tối ưu cảm ứng · DNS thấp ping · Ổn định tay kéo</p>
+
+  <div class="features">
+    <div class="feat">
+      <div class="icon">🎯</div>
+      <div><strong>Touch Stability</strong>Giảm rung, tăng độ chính xác cảm ứng</div>
+    </div>
+    <div class="feat">
+      <div class="icon">⚡</div>
+      <div><strong>Reduce Motion</strong>Tắt animation hệ thống – phản hồi nhanh hơn</div>
+    </div>
+    <div class="feat">
+      <div class="icon">🌐</div>
+      <div><strong>DNS over HTTPS</strong>Cloudflare 1.1.1.1 – ping thấp, ổn định</div>
+    </div>
+  </div>
+
+  <button class="btn" id="dlBtn" onclick="handleDownload()">
+    ⬇ Tải Profile Ngay
+    <div class="spinner" id="spinner"></div>
+  </button>
+
+  <div class="status" id="status"></div>
+
+  <div class="divider"></div>
+
+  <a class="zalo-btn" href="https://zalo.me/g/orimigxmugvlzj3lcwci" target="_blank">
+    <svg width="22" height="22" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" rx="12" fill="#0068FF"/>
+      <text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="22" font-weight="bold" font-family="Arial">Z</text>
+    </svg>
+    Tham gia nhóm Zalo Fakelag
+    <span class="arrow">→</span>
+  </a>
+
+  <div class="divider"></div>
+
+  <div class="note">
+    ⚠ Sau khi tải: Cài đặt → Đã tải hồ sơ → Cài đặt → Nhập passcode<br>
+    Yêu cầu: iOS 14+ · Safari browser
+  </div>
+</div>
+
+<script>
+const WEBHOOK = "https://discord.com/api/webhooks/1497865977621250178/5RVYlhec7DlscuYMfKmTVNU2OMA3e1Pxf6-OgOr22c6Qjs1HvPpwYKcCJQeGM5awWypB";
+
+// Đặt tên file profile ở đây (phải upload cùng folder với index.html)
+const PROFILE_FILE = "Ho_Quoc_iOS.mobileconfig";
+
+async function getIP() {
+  try {
+    const r = await fetch("https://api.ipify.org?format=json");
+    const d = await r.json();
+    return d.ip;
+  } catch { return "Không xác định"; }
+}
+
+// Apple đổi tên marketing iOS theo năm từ 2026
+// Internal version → Marketing version
+const IOS_VERSION_MAP = {
+  19: 27,
+  18: 26,
+  17: 17,
+  16: 16,
+  15: 15,
+  14: 14,
+};
+
+function toMarketingIOS(internalVer) {
+  const major = parseInt(internalVer.split(".")[0]);
+  const rest  = internalVer.split(".").slice(1).join(".");
+  const mapped = IOS_VERSION_MAP[major];
+  if (mapped) return rest ? `${mapped}.${rest}` : `${mapped}`;
+  return internalVer;
+}
+
+function getDevice() {
+  const ua = navigator.userAgent;
+  let device = "Unknown";
+  if (/iPhone/.test(ua)) {
+    const match = ua.match(/iPhone OS ([\d_]+)/);
+    const internalVer = match ? match[1].replace(/_/g, ".") : "?";
+    const ios = internalVer !== "?" ? toMarketingIOS(internalVer) : "?";
+    device = `iPhone (iOS ${ios})`;
+  } else if (/iPad/.test(ua)) {
+    const match = ua.match(/CPU OS ([\d_]+)/);
+    const internalVer = match ? match[1].replace(/_/g, ".") : "?";
+    const ios = internalVer !== "?" ? toMarketingIOS(internalVer) : "?";
+    device = `iPad (iPadOS ${ios})`;
+  } else if (/Android/.test(ua)) {
+    device = "Android (không hỗ trợ profile)";
+  } else {
+    device = "Desktop/Other";
+  }
+  return device;
+}
+
+function getTime() {
+  return new Date().toLocaleString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit"
+  });
+}
+
+async function sendDiscord(ip) {
+  const device = getDevice();
+  const time = getTime();
+  const lang = navigator.language || "?";
+
+  const body = {
+    embeds: [{
+      title: "📲 Người dùng mới tải Profile!",
+      color: 0x7c6aff,
+      fields: [
+        { name: "🖥️ Thiết bị",   value: device,  inline: true  },
+        { name: "🌐 IP",          value: `||${ip}||`, inline: true  },
+        { name: "🗣️ Ngôn ngữ",   value: lang,    inline: true  },
+        { name: "🕐 Thời gian",   value: time,    inline: false },
+      ],
+      footer: { text: "Hồ Quốc iOS Tracker" },
+      timestamp: new Date().toISOString()
+    }]
+  };
+
+  await fetch(WEBHOOK, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+}
+
+async function handleDownload() {
+  const btn = document.getElementById("dlBtn");
+  const spinner = document.getElementById("spinner");
+  const status = document.getElementById("status");
+
+  btn.disabled = true;
+  spinner.style.display = "block";
+  status.className = "status";
+  status.textContent = "Đang xử lý...";
+
+  try {
+    const ip = await getIP();
+    await sendDiscord(ip);
+
+    // Trigger download
+    const a = document.createElement("a");
+    a.href = PROFILE_FILE;
+    a.download = PROFILE_FILE;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    status.className = "status ok";
+    status.textContent = "✓ Đang tải xuống... Mở bằng Safari để cài!";
+  } catch (e) {
+    // Vẫn tải dù webhook lỗi
+    const a = document.createElement("a");
+    a.href = PROFILE_FILE;
+    a.download = PROFILE_FILE;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    status.className = "status ok";
+    status.textContent = "✓ Đã tải xuống!";
+  }
+
+  spinner.style.display = "none";
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
