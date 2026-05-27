@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+    <key>PayloadDisplayName</key>
+    <string>🎯 Hồ Quốc iOS – Kéo Tâm Mượt</string>
+
+    <key>PayloadDescription</key>
+    <string>Ổn định cảm ứng – hỗ trợ kéo tâm – mượt tay · Yêu cầu khởi động lại sau khi cài</string>
+
+    <key>PayloadOrganization</key>
+    <string>HoQuoc Config</string>
+
+    <key>PayloadIdentifier</key>
+    <string>com.hoquoc.ios.aimsmooth.stable.v4</string>
+
+    <key>PayloadRemovalDisallowed</key>
+    <false/>
+
+    <key>PayloadType</key>
+    <string>Configuration</string>
+
+    <key>PayloadUUID</key>
+    <string>HQ01-AIM0-SMOOTH-2026-V4</string>
+
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+
+    <key>PayloadContent</key>
+    <array>
+
+        <!-- 1. Touch & Accessibility -->
+        <dict>
+            <key>PayloadType</key>
+            <string>com.apple.Accessibility</string>
+
+            <key>PayloadIdentifier</key>
+            <string>com.hoquoc.touch.core.v4</string>
+
+            <key>PayloadUUID</key>
+            <string>HQ02-TOUCH-CORE-2026-V4</string>
+
+            <key>PayloadDisplayName</key>
+            <string>Touch Stability – Kéo Tâm Mượt</string>
+
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+
+            <!-- Giảm animation hệ thống -->
+            <key>ReduceMotionEnabled</key>
+            <true/>
+
+            <!-- Giảm trong suốt – nhẹ GPU -->
+            <key>ReduceTransparencyEnabled</key>
+            <true/>
+
+            <!-- Bật tap to wake -->
+            <key>TapToWake</key>
+            <true/>
+
+            <!-- Bật touch accommodations để lọc rung -->
+            <key>TouchAccommodationsEnabled</key>
+            <true/>
+
+            <!-- Bỏ qua chạm lặp trong 0.15s – chống rung tay -->
+            <key>TouchAccommodationsIgnoreRepeatEnabled</key>
+            <true/>
+
+            <key>TouchAccommodationsIgnoreRepeat</key>
+            <real>0.15</real>
+
+            <!-- Tắt tap assistance – giữ nguyên điểm chạm chính xác -->
+            <key>TouchAccommodationsTapAssistanceEnabled</key>
+            <false/>
+
+        </dict>
+
+        <!-- 2. Antiband – Cellular -->
+        <dict>
+            <key>PayloadType</key>
+            <string>com.apple.cellular</string>
+
+            <key>PayloadIdentifier</key>
+            <string>com.hoquoc.cellular.antiband.v4</string>
+
+            <key>PayloadUUID</key>
+            <string>HQ03-CELL-ANTI-BAND-2026-V4</string>
+
+            <key>PayloadDisplayName</key>
+            <string>Antiband – Cellular Optimize</string>
+
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+
+            <key>LTESetupInitialEPSBearer</key>
+            <dict>
+                <key>DefaultProtocolMask</key>
+                <integer>3</integer>
+                <key>PDNType</key>
+                <string>IPv4v6</string>
+            </dict>
+
+            <key>PreferredProtocol</key>
+            <integer>3</integer>
+
+        </dict>
+
+        <!-- 3. Antiband – WiFi QoS -->
+        <dict>
+            <key>PayloadType</key>
+            <string>com.apple.wifi.managed</string>
+
+            <key>PayloadIdentifier</key>
+            <string>com.hoquoc.wifi.qos.v4</string>
+
+            <key>PayloadUUID</key>
+            <string>HQ04-WIFI-QOS-ANTI-2026-V4</string>
+
+            <key>PayloadDisplayName</key>
+            <string>Antiband – WiFi QoS</string>
+
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+
+            <key>DisableAssociationMACRandomization</key>
+            <true/>
+
+            <key>QoSMarkingPolicy</key>
+            <dict>
+                <key>QoSMarkingEnabled</key>
+                <true/>
+                <key>QoSMarkingAllowListAppIdentifiers</key>
+                <array/>
+            </dict>
+
+        </dict>
+
+        <!-- 4. DNS over HTTPS – Cloudflare -->
+        <dict>
+            <key>PayloadType</key>
+            <string>com.apple.dnsSettings.managed</string>
+
+            <key>PayloadIdentifier</key>
+            <string>com.hoquoc.dns.doh.v4</string>
+
+            <key>PayloadUUID</key>
+            <string>HQ05-DOH-CF-LOW-PING-2026-V4</string>
+
+            <key>PayloadDisplayName</key>
+            <string>DNS over HTTPS – Low Ping</string>
+
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+
+            <key>DNSSettings</key>
+            <dict>
+                <key>DNSProtocol</key>
+                <string>HTTPS</string>
+
+                <key>ServerURL</key>
+                <string>https://cloudflare-dns.com/dns-query</string>
+
+                <key>ServerAddresses</key>
+                <array>
+                    <string>1.1.1.1</string>
+                    <string>1.0.0.1</string>
+                </array>
+            </dict>
+
+        </dict>
+
+    </array>
+
+</dict>
+</plist>
