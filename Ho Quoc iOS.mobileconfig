@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadDisplayName</key>
+    <string>🎯 Hồ Quốc iOS – Kéo Tâm Mượt (Fixed)</string>
+    <key>PayloadDescription</key>
+    <string>Bản vá lỗi SSID – Ổn định cảm ứng, hỗ trợ kéo tâm và mượt mạng di động.</string>
+    <key>PayloadOrganization</key>
+    <string>HoQuoc Config</string>
+    <key>PayloadIdentifier</key>
+    <string>com.hoquoc.ios.aimsmooth.fixed</string>
+    <key>PayloadRemovalDisallowed</key>
+    <false/>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>HQ01-AIM0-SMOOTH-2026-FIXED</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+    <key>PayloadContent</key>
+    <array>
+        <!-- Touch & Accessibility -->
+        <dict>
+            <key>PayloadType</key>
+            <string>com.apple.Accessibility</string>
+            <key>PayloadIdentifier</key>
+            <string>com.hoquoc.touch.core</string>
+            <key>PayloadUUID</key>
+            <string>HQ02-TOUCH-CORE-2026-01</string>
+            <key>PayloadDisplayName</key>
+            <string>Touch Stability – Kéo Tâm Mượt</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>ReduceMotionEnabled</key>
+            <true/>
+            <key>TouchAccommodationsEnabled</key>
+            <false/>
+            <key>TapToWake</key>
+            <true/>
+            <key>ReduceTransparencyEnabled</key>
+            <true/>
+        </dict>
+        <!-- Antiband – Cellular Optimization -->
+        <dict>
+            <key>PayloadType</key>
+            <string>com.apple.cellular</string>
+            <key>PayloadIdentifier</key>
+            <string>com.hoquoc.cellular.antiband</string>
+            <key>PayloadUUID</key>
+            <string>HQ04-CELL-ANTI-BAND-2026</string>
+            <key>PayloadDisplayName</key>
+            <string>Antiband – Cellular Optimize</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>LTESetupInitialEPSBearer</key>
+            <dict>
+                <key>DefaultProtocolMask</key>
+                <integer>3</integer>
+                <key>PDNType</key>
+                <string>IPv4v6</string>
+            </dict>
+            <key>PreferredProtocol</key>
+            <integer>3</integer>
+        </dict>
+        <!-- DNS over HTTPS – Cloudflare -->
+        <dict>
+            <key>PayloadType</key>
+            <string>com.apple.dnsSettings.managed</string>
+            <key>PayloadIdentifier</key>
+            <string>com.hoquoc.dns.doh</string>
+            <key>PayloadUUID</key>
+            <string>HQ03-DOH-CF-LOW-PING-2026</string>
+            <key>PayloadDisplayName</key>
+            <string>DNS over HTTPS – Low Ping</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>DNSSettings</key>
+            <dict>
+                <key>DNSProtocol</key>
+                <string>HTTPS</string>
+                <key>ServerURL</key>
+                <string>https://cloudflare-dns.com/dns-query</string>
+                <key>ServerAddresses</key>
+                <array>
+                    <string>1.1.1.1</string>
+                    <string>1.0.0.1</string>
+                </array>
+            </dict>
+        </dict>
+    </array>
+</dict>
+</plist>
