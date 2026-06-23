@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configurable Key Generator</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: linear-gradient(135deg, #0a0a0f 0%, #1a0a2e 50%, #16052a 100%); font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; padding: 20px; }
+.container { max-width: 700px; width: 100%; background: #0d1117; border: 1px solid #6c3fc7; border-radius: 12px; padding: 28px; box-shadow: 0 0 60px rgba(140, 0, 255, 0.2); }
+h1 { color: #e040fb; margin-bottom: 4px; font-size: 22px; letter-spacing: 1px; }
+.subtitle { color: #b39ddb; font-size: 11px; margin-bottom: 24px; letter-spacing: 2px; }
+.section { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #2a1a4a; }
+.section:last-child { border-bottom: none; }
+.label { color: #ce93d8; font-size: 12px; font-weight: 700; margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase; }
+.input-group { display: flex; gap: 10px; margin-bottom: 12px; }
+input[type="text"], input[type="number"], select { flex: 1; padding: 10px 12px; background: #1e1035; border: 1px solid #4a2080; border-radius: 6px; color: #fff; font-family: 'Courier New', monospace; font-size: 12px; }
+input[type="text"]:focus, input[type="number"]:focus, select:focus { outline: none; border-color: #6c3fc7; box-shadow: 0 0 8px rgba(108, 63, 199, 0.3); }
+.button-group { display: flex; gap: 10px; }
+button { flex: 1; padding: 11px 16px; border: none; border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Courier New', monospace; transition: all 0.15s; }
+.btn-primary { background: linear-gradient(45deg, #7b2ff7, #9c27b0); color: #fff; border: 1px solid #ab47bc; }
+.btn-primary:hover { filter: brightness(1.1); box-shadow: 0 0 12px rgba(179, 157, 219, 0.4); }
+.btn-primary:active { transform: scale(0.98); }
+.btn-secondary { background: #160d2e; color: #ce93d8; border: 1px solid #4a2080; }
+.btn-secondary:hover { border-color: #6c3fc7; }
+.btn-secondary:active { transform: scale(0.98); }
+.btn-danger { background: #6a1a1a; color: #ff6b6b; border: 1px solid #a01010; }
+.btn-danger:hover { background: #8a2a2a; }
+.output-box { background: #0a0a0f; border: 1px solid #1e3a5f; border-radius: 6px; padding: 14px; margin-top: 12px; font-size: 11px; line-height: 1.6; color: #4a8aff; word-break: break-all; font-family: 'Courier New', monospace; min-height: 80px; display: flex; align-items: center; }
+.key-list { max-height: 350px; overflow-y: auto; background: #0a0a0f; border: 1px solid #1e3a5f; border-radius: 6px; padding: 12px; }
+.key-item { background: #1e1035; border: 1px solid #2a1a4a; border-radius: 6px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.key-info { flex: 1; }
+.key-date { color: #b39ddb; font-size: 10px; }
+.key-value { color: #4a8aff; font-size: 11px; margin-top: 4px; word-break: break-all; }
+.key-expire { color: #ff6b6b; font-size: 10px; margin-top: 2px; }
+.key-actions { display: flex; gap: 6px; }
+.key-actions button { padding: 6px 10px; font-size: 10px; flex: none; min-width: 50px; }
+.stats { color: #b39ddb; font-size: 10px; margin-top: 10px; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0a0f; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #4a2080; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #6c3fc7; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔑 CONFIGURABLE KEY GENERATOR</h1>
+  <div class="subtitle">AUTO-EXPIRE — YOUR CHOICE</div>
+  <div class="section">
+    <div class="label">⚡ Tạo Key (Chọn Hết Hạn)</div>
+    <div class="input-group">
+      <input type="text" id="keyPrefix" placeholder="Prefix" value="HQ" />
+      <input type="number" id="expiryDays" min="1" max="365" value="7" placeholder="Ngày hết hạn" />
+      <input type="number" id="keyLength" min="16" max="256" value="64" placeholder="Độ dài" />
+    </div>
+    <div class="input-group">
+      <select id="keyFormat">
+        <option value="hex">Hex</option>
+        <option value="base64">Base64</option>
+        <option value="alphanumeric">Alphanumeric</option>
+      </select>
+    </div>
+    <div class="button-group">
+      <button class="btn-primary" onclick="generateKey()">⚡ GENERATE</button>
+      <button class="btn-secondary" onclick="copyKey()">📋 COPY</button>
+    </div>
+    <div class="output-box" id="keyOutput">Key sẽ xuất hiện ở đây</div>
+  </div>
+  <div class="section">
+    <div class="label">💾 Keys Đã Lưu</div>
+    <div class="button-group" style="margin-bottom: 12px;">
+      <button class="btn-secondary" onclick="loadKeys()">🔄 TẢI LẠI</button>
+      <button class="btn-secondary" onclick="exportKeys()">⬇️ XUẤT</button>
+      <button class="btn-danger" onclick="clearAllKeys()">🗑️ XÓA HẾT</button>
+    </div>
+    <div class="key-list" id="keyList">(Không có key nào)</div>
+    <div class="stats" id="stats">Tổng key: 0</div>
+  </div>
+</div>
+<script>
+const STORAGE_KEY = 'hoQuocKeyStoreConfigurable';
+function generateKey() {
+  const prefix = document.getElementById('keyPrefix').value || 'HQ';
+  const expiryDays = parseInt(document.getElementById('expiryDays').value) || 7;
+  const length = parseInt(document.getElementById('keyLength').value);
+  const format = document.getElementById('keyFormat').value;
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0];
+  const expireDate = new Date(now);
+  expireDate.setDate(expireDate.getDate() + expiryDays);
+  const expireDateStr = expireDate.toISOString().split('T')[0];
+  let keyValue = '';
+  if (format === 'hex') {
+    for (let i = 0; i < length; i++) keyValue += Math.floor(Math.random() * 16).toString(16);
+  } else if (format === 'base64') {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    for (let i = 0; i < length; i++) keyValue += chars.charAt(Math.floor(Math.random() * chars.length));
+  } else {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < length; i++) keyValue += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  const fullKey = prefix + '-' + dateStr + '-' + keyValue;
+  document.getElementById('keyOutput').textContent = fullKey;
+  let keys = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  keys.push({date: dateStr, prefix: prefix, format: format, length: length, key: fullKey, created: now.toISOString(), expireDate: expireDateStr, expiresIn: expiryDays});
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
+  loadKeys();
+}
+function loadKeys() {
+  const keys = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const list = document.getElementById('keyList');
+  const now = new Date();
+  const validKeys = keys.filter(k => new Date(k.expireDate) >= now);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(validKeys));
+  if (validKeys.length === 0) {
+    list.innerHTML = '(Không có key nào)';
+    document.getElementById('stats').textContent = 'Tổng key: 0';
+    return;
+  }
+  list.innerHTML = validKeys.map((k, i) => {
+    const expireDate = new Date(k.expireDate);
+    const daysLeft = Math.ceil((expireDate - now) / (1000 * 60 * 60 * 24));
+    return '<div class="key-item"><div class="key-info"><div class="key-date">' + k.date + ' • ' + k.format + ' • ' + k.prefix + ' • ' + k.expiresIn + ' ngày</div><div class="key-value">' + k.key + '</div><div class="key-expire">Hết hạn: ' + k.expireDate + ' (' + daysLeft + ' ngày)</div></div><div class="key-actions"><button class="btn-secondary" onclick="copyKeyText(\'' + k.key + '\')">Copy</button><button class="btn-danger" onclick="deleteKey(' + i + ')">Xóa</button></div></div>';
+  }).join('');
+  document.getElementById('stats').textContent = 'Tổng key: ' + validKeys.length;
+}
+function copyKey() {
+  const output = document.getElementById('keyOutput').textContent;
+  if (output !== 'Key sẽ xuất hiện ở đây') {
+    navigator.clipboard.writeText(output);
+    alert('Đã copy!');
+  }
+}
+function copyKeyText(text) {
+  navigator.clipboard.writeText(text);
+  alert('Đã copy key!');
+}
+function deleteKey(index) {
+  let keys = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  keys.splice(index, 1);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
+  loadKeys();
+}
+function clearAllKeys() {
+  if (confirm('Xác nhận xóa tất cả key?')) {
+    localStorage.setItem(STORAGE_KEY, '[]');
+    loadKeys();
+  }
+}
+function exportKeys() {
+  const keys = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const json = JSON.stringify(keys, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'keys_' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+}
+window.addEventListener('load', loadKeys);
+</script>
+</body>
+</html>
