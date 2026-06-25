@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robot Hồ Quốc - Tài Xỉu Analysis</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+    background: #000; 
+    color: #fff; 
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    height: 100vh;
+}
+
+.top-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, #00ff88, #ffd966, #00ff88);
+    background-size: 200% auto;
+    animation: flow 2s linear infinite;
+    z-index: 9998;
+}
+
+@keyframes flow { 
+    0% { background-position: 0% 50%; } 
+    100% { background-position: 200% 50%; } 
+}
+
+#robot {
+    position: fixed;
+    top: 50%; left: 10px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    cursor: grab;
+    user-select: none;
+}
+
+#robot:active { cursor: grabbing; }
+
+#robot img, .robot-emoji-fallback {
+    width: 90px;
+    height: 90px;
+    pointer-events: none;
+    filter: drop-shadow(0 0 15px #00ff88);
+    animation: hoverRobot 3s ease-in-out infinite;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.robot-emoji-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+}
+
+@keyframes hoverRobot {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-20px) scale(1.1); }
+}
+
+#robot-info {
+    background: rgba(0, 20, 40, 0.9);
+    border: 2px solid #00ff88;
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-left: 15px;
+    min-width: 200px;
+    max-width: calc(100vw - 120px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+    animation: boxPulse 2s ease-in-out infinite;
+}
+
+@keyframes boxPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.2), inset 0 0 20px rgba(0, 255, 136, 0.05); }
+    50% { box-shadow: 0 0 40px rgba(0, 255, 136, 0.4), inset 0 0 20px rgba(0, 255, 136, 0.1); }
+}
+
+#robot-info h3 {
+    color: #00ff88;
+    font-size: 16px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#robot-info p {
+    color: #aaa;
+    font-size: 12px;
+    margin: 0;
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #00ff88;
+    border-radius: 50%;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(-20px); }
+}
+
+
+
+.control-buttons {
+    position: absolute;
+    top: -45px;
+    right: 0;
+    display: flex;
+    gap: 8px;
+}
+
+.control-btn {
+    background: #1a1a2e;
+    border: 2px solid #ffd966;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #ffd966;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    font-weight: bold;
+}
+
+.control-btn:hover {
+    background: #ffd966;
+    color: #000;
+    transform: scale(1.1);
+}
+
+.control-btn.analysis-btn { border-color: #00ff88; color: #00ff88; }
+.control-btn.analysis-btn:hover { background: #00ff88; color: #000; }
+</style>
+</head>
+<body>
+
+<div class="top-bar"></div>
+
+<iframe src="https://lc79b.bet" style="position: fixed; inset: 0; width: 100%; height: 100%; border: none; z-index: 1;"></iframe>
+
+<div id="robot">
+    <img src="https://i.postimg.cc/rwkZQhxp/Robot.gif" alt="Robot" 
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+    <span class="robot-emoji-fallback" style="display:none">🤖</span>
+    
+    <div id="robot-info">
+        <h3><span class="status-indicator"></span> ROBOT HỒ QUỐC</h3>
+        <p>Đang đồng bộ thuật toán đa tầng...</p>
+    </div>
+    
+    <div class="control-buttons">
+        <button class="control-btn analysis-btn" id="analysisBtn" title="Analytics Dashboard">📊</button>
+        <button class="control-btn" id="kellyBtn" title="Kelly Criterion">💰</button>
+    </div>
+</div>
+
+<script>
+'use strict';
+
+// Global error handler
+window.addEventListener('error', (e) => {
+    console.error('UNCAUGHT ERROR:', e.message, 'at line', e.lineno);
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('UNHANDLED REJECTION:', e.reason);
+});
+
+// Wait for DOM ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Ready - initializing...');
+    initializeApp();
+});
+
+function initializeApp() {
+    try {
+        setupDrag();
+        setupDataLogger();
+        setupAnalytics();
+        setupFetchLoop();
+        setupKellyBtn();
+        console.log('✓ App initialized');
+    } catch (e) {
+        console.error('Init error:', e.message);
+    }
+}
+
+// ============ DRAG FUNCTIONALITY ============
+function setupDrag() {
+    const robot = document.getElementById('robot');
+    if (!robot) {
+        console.error('Robot element not found');
+        return;
+    }
+
+    let robotDrag = false, robotSX = 0, robotSY = 0;
+
+    // Center robot initially
+    setTimeout(() => {
+        try {
+            const h = robot.offsetHeight;
+            robot.style.top = (window.innerHeight / 2 - h / 2) + 'px';
+        } catch (e) {
+            console.error('Positioning error:', e);
+        }
+    }, 100);
+
+    robot.addEventListener('mousedown', (e) => {
+        robotDrag = true;
+        const r = robot.getBoundingClientRect();
+        robotSX = e.clientX - r.left;
+        robotSY = e.clientY - r.top;
+        e.preventDefault();
+    });
+
+    robot.addEventListener('touchstart', (e) => {
+        robotDrag = true;
+        const t = e.touches[0];
+        const r = robot.getBoundingClientRect();
+        robotSX = t.clientX - r.left;
+        robotSY = t.clientY - r.top;
+    }, { passive: true });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!robotDrag) return;
+        robot.style.left = (e.clientX - robotSX) + 'px';
+        robot.style.top  = (e.clientY - robotSY) + 'px';
+    });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!robotDrag) return;
+        const t = e.touches[0];
+        robot.style.left = (t.clientX - robotSX) + 'px';
+        robot.style.top  = (t.clientY - robotSY) + 'px';
+    }, { passive: false });
+
+    document.addEventListener('mouseup',  () => { robotDrag = false; });
+    document.addEventListener('touchend', () => { robotDrag = false; });
+    
+    console.log('✓ Drag setup complete');
+}
+
+// ============ DATA LOGGER ============
+const DB_KEY = 'taixiu_history';
+
+const logger = {
+    data: [],
+    
+    init() {
+        try {
+            this.data = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+            console.log(`✓ Logger initialized (${this.data.length} records)`);
+        } catch (e) {
+            console.error('Logger init error:', e);
+            this.data = [];
+        }
+    },
+    
+    log(id, d1, d2, d3, result) {
+        try {
+            const sum = (parseInt(d1) || 0) + (parseInt(d2) || 0) + (parseInt(d3) || 0);
+            const resultStr = String(result || '').toUpperCase();
+            const isTai = sum > 10 || (sum === 0 && resultStr.includes('TÀI'));
+            
+            this.data.push({
+                id: id,
+                timestamp: Date.now(),
+                dice1: parseInt(d1) || 0,
+                dice2: parseInt(d2) || 0,
+                dice3: parseInt(d3) || 0,
+                sum: sum,
+                actual: isTai ? 'TAI' : 'XIU',
+                raw: result
+            });
+            
+            localStorage.setItem(DB_KEY, JSON.stringify(this.data));
+        } catch (e) {
+            console.error('Log error:', e);
+        }
+    },
+    
+    export() {
+        let csv = 'id,timestamp,dice1,dice2,dice3,sum,actual,raw\n';
+        this.data.forEach(r => {
+            csv += `${r.id},${r.timestamp},${r.dice1},${r.dice2},${r.dice3},${r.sum},${r.actual},"${r.raw}"\n`;
+        });
+        return csv;
+    },
+    
+    clear() {
+        this.data = [];
+        localStorage.removeItem(DB_KEY);
+    }
+};
+
+function setupDataLogger() {
+    logger.init();
+    console.log('✓ Data logger ready');
+}
+
+// ============ ANALYTICS ============
+function setupAnalytics() {
+    const analysisBtn = document.getElementById('analysisBtn');
+    if (analysisBtn) {
+        analysisBtn.addEventListener('click', openDashboard);
+        console.log('✓ Analytics button ready');
+    }
+}
+
+function openDashboard() {
+    if (logger.data.length === 0) {
+        alert('No data yet. Watch some rounds first.');
+        return;
+    }
+
+    const stats = calculateStats();
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; inset: 0; z-index: 99999;
+        background: rgba(0,0,0,0.95); backdrop-filter: blur(5px);
+        overflow-y: auto; padding: 20px;
+        color: #fff; font-family: monospace;
+    `;
+    
+    const html = `
+        <div style="max-width: 900px; margin: 0 auto;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #00ff88; padding-bottom: 10px;">
+                <h2 style="color: #00ff88; margin: 0;">🔬 ANALYSIS DASHBOARD</h2>
+                <button onclick="this.closest('[style*=fixed]').remove()" style="background: #ff4466; border: none; padding: 8px 16px; cursor: pointer; border-radius: 4px; color: #fff; font-weight: bold;">CLOSE</button>
+            </div>
+            
+            <div style="background: rgba(0,255,136,0.1); padding: 15px; border-left: 4px solid #00ff88; border-radius: 4px; margin-bottom: 20px;">
+                <div style="font-size: 12px; color: #aaa;">TOTAL ROUNDS</div>
+                <div style="color: #00ff88; font-size: 28px; font-weight: bold;">${stats.total}</div>
+            </div>
+            
+            <div style="background: rgba(0,255,136,0.1); padding: 15px; border-left: 4px solid #00ff88; border-radius: 4px; margin-bottom: 20px;">
+                <div style="font-size: 12px; color: #aaa;">TAI vs XIU</div>
+                <div style="color: #00ff88; font-size: 18px; font-weight: bold;">
+                    ${stats.tai} TAI (${stats.tai_pct.toFixed(2)}%) | ${stats.xiu} XIU (${stats.xiu_pct.toFixed(2)}%)
+                </div>
+            </div>
+            
+            <div style="background: #1a1a2e; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                <h3 style="color: #00ff88; margin-top: 0;">EXPORT DATA</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="
+                        const csv = logger.export();
+                        const blob = new Blob([csv], { type: 'text/csv' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'taixiu_' + Date.now() + '.csv';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    " style="background: #00ff88; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; color: #000; font-weight: bold;">📥 EXPORT CSV</button>
+                    
+                    <button onclick="exportSessionsJSON()" style="background: #ffd966; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; color: #000; font-weight: bold;">📥 EXPORT JSON (SESSIONS)</button>
+                    
+                    <button onclick="
+                        const sessions = getSessions();
+                        console.log('All Sessions:', sessions);
+                        alert('Sessions logged to console (F12) - ' + sessions.length + ' sessions');
+                    " style="background: #0088ff; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; color: #fff; font-weight: bold;">🖥️ VIEW JSON</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    modal.innerHTML = html;
+    document.body.appendChild(modal);
+}
+
+function calculateStats() {
+    const tai   = logger.data.filter(r => r.actual === 'TAI').length;
+    const total = logger.data.length;
+    if (total === 0) {
+        return { total: 0, tai: 0, xiu: 0, tai_pct: 0, xiu_pct: 0 };
+    }
+    return {
+        total:   total,
+        tai:     tai,
+        xiu:     total - tai,
+        tai_pct: (tai / total) * 100,
+        xiu_pct: ((total - tai) / total) * 100
+    };
+}
+
+// ============ FETCH LOOP ============
+const API_URL = 'https://wtxmd52.tele68.com/v1/txmd5/lite-sessions?cp=R&cl=R&pf=web&at=3959701241b686f12e01bfe9c3a319b8';
+
+let lastPhienId = null;
+let predictions = []; // Track all predictions
+const SESSION_LOG_KEY = 'taixiu_sessions_json';
+
+function setupFetchLoop() {
+    setInterval(fetchAndLog, 2000);
+    console.log('✓ Fetch loop started');
+}
+
+async function fetchAndLog() {
+    try {
+        const response = await Promise.race([
+            fetch(API_URL, { 
+                cache: 'no-store',
+                method: 'GET'
+            }),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout')), 5000)
+            )
+        ]);
+        
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        if (!data || !data.list || data.list.length === 0) return;
+        
+        const latest = data.list[0];
+        if (!latest || !latest.sessionId) return;
+        
+        // Check if new phien
+        if (latest.sessionId !== lastPhienId) {
+            lastPhienId = latest.sessionId;
+            
+            if (latest.dice1 && latest.dice2 && latest.dice3) {
+                const result = latest.result || '';
+                logger.log(latest.sessionId, latest.dice1, latest.dice2, latest.dice3, result);
+            }
+            
+            displayPrediction(latest);
+        }
+    } catch (e) {
+        // Silent fail
+    }
+}
+
+function displayPrediction(data) {
+    try {
+        const phienId = data.sessionId || '#' + Math.floor(Math.random() * 10000000);
+        const d1 = parseInt(data.dice1) || 0;
+        const d2 = parseInt(data.dice2) || 0;
+        const d3 = parseInt(data.dice3) || 0;
+        const sum = d1 + d2 + d3;
+        const result = String(data.result || '').toUpperCase();
+        const isTai = sum > 10 || (sum === 0 && (result.includes('TÀI') || result.includes('TAI')));
+        const actualResult = isTai ? 'TÀI' : 'XIU';
+        
+        // Simple prediction based on win rate
+        const stats = calculateStats();
+        const winRate = stats.total > 0 ? stats.tai / stats.total : 0.5;
+        let prediction = winRate > 0.5 ? 'TÀI' : 'XIU';
+        let confidence = Math.abs(winRate - 0.5) * 200;
+        confidence = Math.min(Math.max(confidence, 45), 99);
+        
+        // Track prediction
+        const isCorrect = prediction === actualResult;
+        predictions.push({
+            phienId: phienId,
+            predicted: prediction,
+            actual: actualResult,
+            correct: isCorrect,
+            confidence: confidence,
+            dices: [d1, d2, d3],
+            sum: sum,
+            timestamp: Date.now()
+        });
+        
+        // Calculate rolling accuracy
+        const recent = predictions.slice(-20);
+        const recentAccuracy = recent.length > 0
+            ? (recent.filter(p => p.correct).length / recent.length) * 100
+            : 0;
+        
+        // Save to JSON
+        saveSessionJSON({
+            phienId: phienId,
+            timestamp: new Date().toISOString(),
+            prediction: prediction,
+            actual: actualResult,
+            correct: isCorrect,
+            confidence: confidence,
+            dices: [d1, d2, d3],
+            sum: sum,
+            accuracy_20_recent: recentAccuracy,
+            total_predictions: predictions.length
+        });
+        
+        // Color coding
+        const predictionColor = prediction === 'TÀI' ? '#00ff88' : '#ff6666';
+        const predictionBg = prediction === 'TÀI' ? 'rgba(0,255,136,0.2)' : 'rgba(255,100,100,0.2)';
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'prediction-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 30%;
+            left: 10px;
+            width: 280px;
+            background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(0,20,40,0.95));
+            border: 2px solid #00ff88;
+            border-radius: 12px;
+            padding: 15px 20px;
+            z-index: 9998;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 40px rgba(0,255,136,0.3);
+            animation: slideDown 0.4s ease-out;
+            font-family: monospace;
+            color: #fff;
+            cursor: grab;
+            user-select: none;
+            max-height: 80vh;
+            overflow-y: auto;
+        `;
+        
+        // Draggable
+        let overlayDrag = false, overlaySX = 0, overlaySY = 0;
+        overlay.addEventListener('mousedown', (e) => {
+            overlayDrag = true;
+            const r = overlay.getBoundingClientRect();
+            overlaySX = e.clientX - r.left;
+            overlaySY = e.clientY - r.top;
+            e.stopPropagation();
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (!overlayDrag) return;
+            overlay.style.left = (e.clientX - overlaySX) + 'px';
+            overlay.style.top  = (e.clientY - overlaySY) + 'px';
+        });
+        document.addEventListener('mouseup', () => { overlayDrag = false; });
+        
+        // Build HTML
+        overlay.innerHTML = `
+            <div style="text-align: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #00ff88;">
+                <h3 style="margin: 0; color: #00ff88; font-size: 12px;">ROBOT HỒ QUỐC</h3>
+                <div style="color: #ffd966; font-size: 10px; margin-top: 4px;">Phiên: ${phienId}</div>
+            </div>
+            
+            <div style="background: ${predictionBg}; padding: 12px; border-radius: 8px; border: 3px solid ${predictionColor}; margin-bottom: 12px; text-align: center;">
+                <div style="color: #aaa; font-size: 9px; margin-bottom: 8px;">📊 DỰ ĐOÁN:</div>
+                <div style="display: flex; justify-content: space-around; align-items: center;">
+                    <div>
+                        <div style="font-size: 32px; font-weight: bold; color: ${predictionColor};">${prediction}</div>
+                        <div style="font-size: 8px; color: #aaa; margin-top: 2px;">Dự đoán</div>
+                    </div>
+                    <div style="font-size: 24px;">${isCorrect ? '✅' : '❌'}</div>
+                    <div>
+                        <div style="font-size: 32px; font-weight: bold; color: ${actualResult === 'TÀI' ? '#00ff88' : '#ff6666'};">${actualResult}</div>
+                        <div style="font-size: 8px; color: #aaa; margin-top: 2px;">Thực tế</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background: rgba(0,255,136,0.1); padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+                <div style="color: #aaa; font-size: 8px; margin-bottom: 6px;">CONFIDENCE:</div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <div style="flex: 1; height: 6px; background: rgba(0,255,136,0.2); border-radius: 3px;">
+                        <div style="width: ${confidence}%; height: 100%; background: linear-gradient(90deg, #00ff88, #00ddff); border-radius: 3px;"></div>
+                    </div>
+                    <div style="color: #00ff88; font-weight: bold; font-size: 12px; min-width: 35px;">${confidence.toFixed(0)}%</div>
+                </div>
+                ${confidence >= 90 ? `<div style="margin-top: 6px; padding: 6px; background: rgba(255,215,0,0.3); border: 1px solid #ffd966; border-radius: 4px;">
+                    <div style="color: #ffd966; font-weight: bold; font-size: 11px; text-align: center;">🎯 CẶP CƯỢC ${prediction}</div>
+                </div>` : `<div style="margin-top: 6px; padding: 6px; background: rgba(200,100,100,0.2); border: 1px solid #ff6666; border-radius: 4px;">
+                    <div style="color: #ff6666; font-weight: bold; font-size: 10px; text-align: center;">⏸️ SKIP (&lt; 90%)</div>
+                </div>`}
+            </div>
+            
+            <div style="background: rgba(255,215,0,0.1); padding: 8px; border-radius: 6px; margin-bottom: 8px; text-align: center;">
+                <div style="color: #aaa; font-size: 8px; margin-bottom: 3px;">ACCURACY (20 phiên):</div>
+                <div style="font-size: 13px; font-weight: bold; color: #ffd966;">${recentAccuracy.toFixed(1)}%</div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; font-size: 9px; color: #aaa; text-align: center; padding-top: 8px; border-top: 1px solid rgba(0,255,136,0.2);">
+                <div><div style="color: #fff; font-weight: bold;">${d1}</div><div style="font-size: 7px;">Xúc 1</div></div>
+                <div><div style="color: #fff; font-weight: bold;">${d2}</div><div style="font-size: 7px;">Xúc 2</div></div>
+                <div><div style="color: #fff; font-weight: bold;">${d3}</div><div style="font-size: 7px;">Sum:${sum}</div></div>
+            </div>
+        `;
+        
+        // Remove old overlay
+        const old = document.getElementById('prediction-overlay');
+        if (old) old.remove();
+        
+        document.body.appendChild(overlay);
+        
+        // Auto-hide after 12 seconds
+        setTimeout(() => {
+            overlay.style.animation = 'slideUp 0.4s ease-in forwards';
+            setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 400);
+        }, 12000);
+        
+    } catch (e) {
+        console.error('displayPrediction error:', e.message);
+    }
+}
+
+
+
+/* ============ JSON SESSION LOGGER ============ */
+function saveSessionJSON(sessionData) {
+    try {
+        let sessions = [];
+        const stored = localStorage.getItem(SESSION_LOG_KEY);
+        if (stored) {
+            sessions = JSON.parse(stored);
+        }
+        
+        sessions.push(sessionData);
+        localStorage.setItem(SESSION_LOG_KEY, JSON.stringify(sessions));
+        console.log(`Session saved. Total: ${sessions.length}`);
+        
+        // Also try to save to file via fetch (GitHub Pages limitation - read-only)
+        // For manual upload: export and put sessions.json in repo
+        
+    } catch (e) {
+        console.error('JSON save error:', e);
+    }
+}
+
+function exportSessionsJSON() {
+    try {
+        const stored = localStorage.getItem(SESSION_LOG_KEY);
+        if (!stored) {
+            alert('No session data yet');
+            return;
+        }
+        
+        const sessions = JSON.parse(stored);
+        const json = JSON.stringify(sessions, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'taixiu_sessions_' + Date.now() + '.json';
+        a.click();
+        
+        console.log(`Exported ${sessions.length} sessions to JSON`);
+    } catch (e) {
+        console.error('Export error:', e);
+    }
+}
+
+function getSessions() {
+    try {
+        const stored = localStorage.getItem(SESSION_LOG_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+// FIX 7: Kelly listener moved inside initializeApp so DOM is ready when it runs
+function setupKellyBtn() {
+    const kellyBtn = document.getElementById('kellyBtn');
+    if (!kellyBtn) return;
+    kellyBtn.addEventListener('click', () => {
+        if (logger.data.length < 30) {
+            alert('Need at least 30 rounds for accurate Kelly calculation');
+            return;
+        }
+        const stats   = calculateStats();
+        const winRate = stats.total > 0 ? stats.tai / stats.total : 0.5;
+        const kelly   = Math.max((winRate - (1 - winRate)), 0);
+        alert(
+            'Kelly Criterion (TAI bet):\n\n' +
+            'Win Rate: ' + (winRate * 100).toFixed(2) + '%\n' +
+            'Kelly f*: ' + kelly.toFixed(4) + '\n\n' +
+            '¼ Kelly: ' + (kelly * 0.25 * 100).toFixed(2) + '%\n' +
+            '½ Kelly: ' + (kelly * 0.5  * 100).toFixed(2) + '%'
+        );
+    });
+}
+</script>
+
+</body>
+</html>
