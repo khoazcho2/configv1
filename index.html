@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robot LC79 - HoQuocRobot</title>
+
+<style>
+/* ================= CSS GIAO DIỆN ROBOT VIP ================= */
+html,body{
+  margin:0;padding:0;width:100%;height:100%;
+  overflow:hidden;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #000; 
+}
+#game{
+  position:fixed;inset:0;width:100vw;height:100vh;
+  border:none;z-index:1
+}
+#robot{
+  position:fixed;
+  top:50%;left:10px;
+  z-index:9999;
+  max-width:calc(100vw - 10px);
+  display:flex;
+  align-items:center;
+  cursor:grab;
+}
+#robot img{
+  width:90px;height:90px;
+  pointer-events:none;
+  filter: drop-shadow(0 0 15px #00ff88);
+  animation: hoverRobot 3s ease-in-out infinite;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.robot-emoji-fallback {
+  pointer-events:none;
+  filter: drop-shadow(0 0 15px #00ff88);
+  animation: hoverRobot 3s ease-in-out infinite;
+}
+#robot:hover img {
+    transform: scale(1.1) rotate(5deg);
+    filter: drop-shadow(0 0 25px #ffd966);
+}
+#box{
+  background: linear-gradient(135deg, rgba(10,15,25,0.95), rgba(20,25,40,0.95));
+  color:#fff;
+  padding:15px 20px;
+  margin-left:10px;
+  border-radius:14px;
+  min-width:200px;
+  max-width:calc(100vw - 120px);
+  backdrop-filter:blur(10px);
+  border: 2px solid #00ff88;
+  border-left: 5px solid #00ff88;
+  box-shadow: 0 0 25px rgba(0, 255, 136, 0.4);
+  font-size:14px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.4s;
+}
+#box::before {
+  content: "";
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  animation: shine 3s infinite;
+}
+@keyframes hoverRobot {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes shine {
+  0% { left: -100%; }
+  20% { left: 100%; }
+  100% { left: 100%; }
+}
+.tai{color:#00ff88;font-weight:900; text-shadow: 0 0 15px #00ff88;}
+.xiu{color:#ff4466;font-weight:900; text-shadow: 0 0 15px #ff4466;}
+.win{color:#00ff88; text-shadow: 0 0 10px #00ff88;}
+.lose{color:#ff6666; text-shadow: 0 0 10px #ff6666;}
+.percent{color:#ffd966; font-weight: bold;}
+.status-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  background: #00ff88;
+  border-radius: 50%;
+  margin-right: 5px;
+  box-shadow: 0 0 8px #00ff88;
+  animation: blink 1s infinite;
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+.vip-border {
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, #00ff88, #ffd966, #00ff88);
+    background-size: 200% auto;
+    animation: flow 2s linear infinite;
+}
+@keyframes flow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+.radar {
+    position: absolute;
+    width: 100%; height: 100%;
+    top: 0; left: 0;
+    background: linear-gradient(transparent 90%, rgba(0, 255, 136, 0.15) 100%);
+    background-size: 100% 20px;
+    animation: scan 2s linear infinite;
+    pointer-events: none;
+}
+@keyframes scan { from { transform: translateY(-100%); } to { transform: translateY(100%); } }
+</style>
+</head>
+
+<body>
+
+<iframe id="game" src="https://lc79b.bet"></iframe>
+
+<div id="robot">
+  <img src="https://i.postimg.cc/rwkZQhxp/Robot.gif" alt="🤖" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="width:90px;height:90px"><span class="robot-emoji-fallback" style="display:none;width:90px;height:90px;font-size:60px;align-items:center;justify-content:center;filter:drop-shadow(0 0 15px #00ff88);animation:hoverRobot 3s ease-in-out infinite">🤖</span>
+  <div id="box">
+    <div class="vip-border"></div>
+    <div class="radar"></div>
+    <span class="status-dot"></span><b style="color:#00ff88; font-size: 15px;">🤖 ROBOT HỒ QUỐC</b><br>
+    <div style="margin-top: 8px; font-size: 12px; color: #aaa;">Đang đồng bộ thuật toán đa tầng...</div>
+  </div>
+</div>
+
+<script>
+/* ================= KÉO THẢ ROBOT (DRAG) ================= */
+const robot = document.getElementById("robot");
+let drag = false, sx = 0, sy = 0;
+
+// Căn giữa ban đầu bằng JS — tránh conflict với drag khi dùng transform CSS
+setTimeout(() => {
+    robot.style.top = (window.innerHeight / 2 - robot.offsetHeight / 2) + "px";
+}, 0);
+
+robot.addEventListener("mousedown", e => {
+    drag = true;
+    const r = robot.getBoundingClientRect();
+    sx = e.clientX - r.left;
+    sy = e.clientY - r.top;
+    e.preventDefault();
+});
+robot.addEventListener("touchstart", e => {
+    drag = true;
+    const t = e.touches[0];
+    const r = robot.getBoundingClientRect();
+    sx = t.clientX - r.left;
+    sy = t.clientY - r.top;
+}, { passive: true });
+document.addEventListener("mousemove", e => {
+    if (!drag) return;
+    robot.style.left = (e.clientX - sx) + "px";
+    robot.style.top  = (e.clientY - sy) + "px";
+});
+document.addEventListener("touchmove", e => {
+    if (!drag) return;
+    const t = e.touches[0];
+    robot.style.left = (t.clientX - sx) + "px";
+    robot.style.top  = (t.clientY - sy) + "px";
+}, { passive: false });
+document.addEventListener("mouseup",  () => drag = false);
+document.addEventListener("touchend", () => drag = false);
+
+/* ================= API FETCH CỦA LC79 ================= */
+const API_URL = "https://wtxmd52.tele68.com/v1/txmd5/lite-sessions?cp=R&cl=R&pf=web&at=3959701241b686f12e01bfe9c3a319b8";
+
+async function fetchSafe() {
+    try {
+        const c = new AbortController();
+        setTimeout(() => c.abort(), 4000);
+        const r = await fetch(API_URL, { signal: c.signal, cache: "no-store" });
+        if (r.ok) return await r.json();
+    } catch (e) {}
+    return null;
+}
+
+/* ================= LOGIC TOÀN CỤC & BỘ NHỚ ================= */
+const box = document.getElementById("box");
+let phienHienTai = 0;
+let trangThaiDangHienKetQua = false;
+let historyGears = []; 
+let rawHistory = [];
+
+/* ================= THUẬT TOÁN SUPER AI VI LONG (15 TẦNG) ================= */
+function superViLongAlgorithm() {
+    let finalPred = -1;
+    let logicMsg = "ĐANG TÌM ĐIỂM VÀO LỆNH...";
+    let confBase = 0;
+
+    if (historyGears.length < 15) return { pred: -1, rate: 0, trend: "ĐANG LẤY DỮ LIỆU LỊCH SỬ..." };
+
+    const h = historyGears; // Đã được reverse để h[0] là ván gần nhất
+    let pStr = h.slice(0, Math.min(30, h.length)).join('');
+    let curStreak = 0; for(let i=0; i<h.length; i++) { if(h[i]===h[0]) curStreak++; else break; }
+    
+    // Thuật toán cũ 
+    let vip11Pred = -1; if (h.length >= 2) { if (h[0] !== h[1]) { vip11Pred = h[0]; } }
+    let flashPred = -1; if (h.length >= 2 && h.length < 10) { if (h[0] === h[1]) { flashPred = h[0]; } else { flashPred = h[0] === 1 ? 0 : 1; } if (h.length >= 3) { if (h[0] !== h[1] && h[1] !== h[2]) { flashPred = h[0] === 1 ? 0 : 1; } else if (h[0] === h[1] && h[1] === h[2]) { flashPred = h[0]; } } }
+    let tensorPred = -1; if (h.length >= 25) { let block1 = h.slice(0, 8).filter(x=>x===1).length; let block2 = h.slice(8, 16).filter(x=>x===1).length; let block3 = h.slice(16, 24).filter(x=>x===1).length; if (block1 > 5 && block2 < 3 && block3 > 5) { tensorPred = 0; } else if (block1 < 3 && block2 > 5 && block3 < 3) { tensorPred = 1; } let diff1 = Math.abs(block1 - block2); let diff2 = Math.abs(block2 - block3); if (diff1 <= 1 && diff2 <= 1 && curStreak >= 2) { tensorPred = h[0] === 1 ? 0 : 1; } }
+    let elliotWavePred = -1; if (h.length >= 15) { let waves = []; let wCount = 1; for(let i=0; i<8; i++) { if(h[i] === h[i+1]) wCount++; else { waves.push(wCount); wCount = 1; } } if (waves.length >= 3 && waves[0] === 1 && waves[1] === 2 && waves[2] >= 3) { elliotWavePred = h[0] === 1 ? 0 : 1; } }
+    let poissonPred = -1; if (h.length >= 30) { let countT_30 = h.slice(0, 30).filter(x => x === 1).length; if (countT_30 >= 22 && h[0] === 1) { poissonPred = 0; } else if (countT_30 <= 8 && h[0] === 0) { poissonPred = 1; } }
+    let clusterPred = -1; if (h.length >= 8) { let clusterScore = (h[0]*8) + (h[1]*4) + (h[2]*2) + (h[3]*1); if (clusterScore === 15 && curStreak === 4) { clusterPred = 0; } else if (clusterScore === 0 && curStreak === 4) { clusterPred = 1; } }
+    let quantumPred = -1; if (h.length >= 25) { let qTai = 0, qXiu = 0; for(let i=0; i<10; i++) { if (h[i] === h[i+5] && h[i] !== h[i+10]) { if (h[i] === 1) qTai++; else qXiu++; } } if (qTai >= 3 && h[0] === 1) { quantumPred = 0; } else if (qXiu >= 3 && h[0] === 0) { quantumPred = 1; } }
+    let vipViLongPred = -1; if (h.length >= 20) { let crossScore = 0; for(let i=0; i<8; i++) { if(h[i] === h[i+2] && h[i+1] !== h[i]) crossScore++; } if (crossScore >= 5) { vipViLongPred = h[0] === 1 ? 0 : 1; } let primePattern = pStr.startsWith('1110111') || pStr.startsWith('0001000'); if (primePattern) { vipViLongPred = h[0]; } }
+
+    // ================== CÁC THUẬT TOÁN NÂNG CẤP MỚI ==================
+    // VIP 13: MARKOV CHAIN 3D (Bám nhịp 3 tầng)
+    let markov3DPred = -1;
+    if (h.length >= 25) {
+        let pattern3 = "" + h[2] + h[1] + h[0];
+        let t1 = 0, t0 = 0;
+        for (let i = 3; i < h.length - 3; i++) {
+            if ("" + h[i+2] + h[i+1] + h[i] === pattern3) {
+                if (h[i-1] === 1) t1++; else t0++;
+            }
+        }
+        if (t1 > t0 && t1 >= 2) markov3DPred = 1;
+        else if (t0 > t1 && t0 >= 2) markov3DPred = 0;
+    }
+
+    // VIP 14: GAUSSIAN NOISE FILTER (Lọc nhiễu lệch chuẩn)
+    let gaussianPred = -1;
+    if (rawHistory.length >= 15) {
+        let sums = [];
+        for(let i=0; i<15; i++) {
+            let s = (rawHistory[i].dice1||0) + (rawHistory[i].dice2||0) + (rawHistory[i].dice3||0);
+            if(s > 0) sums.push(s);
+        }
+        if (sums.length === 15) {
+            let mean = sums.reduce((a, b) => a + b, 0) / 15;
+            let variance = sums.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / 15;
+            let stdDev = Math.sqrt(variance);
+            // Nếu độ lệch chuẩn thấp -> Cầu đang bị nén -> Chuẩn bị bẻ
+            if (stdDev < 1.8 && curStreak >= 3) {
+                gaussianPred = h[0] === 1 ? 0 : 1;
+            } 
+            // Nếu độ lệch chuẩn cực cao -> Chặn đà
+            else if (stdDev > 4.5) {
+                if (mean > 12) gaussianPred = 0; // Đang nổ Tài to nhiều -> Ép Xỉu
+                else if (mean < 9) gaussianPred = 1;
+            }
+        }
+    }
+
+    // VIP 15: FRACTAL GEOMETRY (Hình học phân dạng)
+    let fractalPred = -1;
+    if (h.length >= 20) {
+        let currentFractal = h.slice(0, 4).join('');
+        let fractalMatches = 0;
+        for (let i = 4; i < h.length - 4; i++) {
+            if (h.slice(i, i+4).join('') === currentFractal) {
+                fractalPred = h[i-1]; 
+                fractalMatches++;
+                break; // Ưu tiên fractal gần nhất
+            }
+        }
+    }
+
+    // ================= CÂY QUYẾT ĐỊNH XẾP HẠNG =================
+    if (gaussianPred !== -1) { finalPred = gaussianPred; logicMsg = "VIP 14 (GAUSSIAN): LỌC NHIỄU NÉN CẦU"; confBase = 99; }
+    else if (markov3DPred !== -1) { finalPred = markov3DPred; logicMsg = "VIP 13 (MARKOV 3D): MA TRẬN 3 TẦNG"; confBase = 98; }
+    else if (fractalPred !== -1) { finalPred = fractalPred; logicMsg = "VIP 15 (FRACTAL): HÌNH HỌC PHÂN DẠNG"; confBase = 98; }
+    else if (vip11Pred !== -1) { finalPred = vip11Pred; logicMsg = "VIP 11 (SIÊU BIẾN THIÊN)"; confBase = 99; }
+    else if (tensorPred !== -1) { finalPred = tensorPred; logicMsg = "VIP 10 (TENSOR): DAO ĐỘNG KHỐI LỚN"; confBase = 99; }
+    else if (poissonPred !== -1) { finalPred = poissonPred; logicMsg = "VIP 7 (POISSON): LỆCH CHUẨN Z-SCORE"; confBase = 99; }
+    else if (elliotWavePred !== -1) { finalPred = elliotWavePred; logicMsg = "VIP 6 (ELLIOT): ĐỈNH SÓNG ĐẨY"; confBase = 99; }
+    else if (clusterPred !== -1) { finalPred = clusterPred; logicMsg = "VIP 8 (CLUSTER): XẢ ÁP LỰC CỤM"; confBase = 98; }
+    else if (quantumPred !== -1) { finalPred = quantumPred; logicMsg = "VIP LƯỢNG TỬ: ĐIỂM RƠI GÃY NHỊP"; confBase = 99; }
+    else if (vipViLongPred !== -1) { finalPred = vipViLongPred; logicMsg = "VIP VI LONG: BẺ CẦU CHÉO ĐỘNG"; confBase = 99; }
+    else if (flashPred !== -1) { finalPred = flashPred; logicMsg = "VIP 9 (FLASH): THEO ĐÀ BỆT SỚM"; confBase = 90; }
+    else {
+        // Thuật toán dự phòng
+        let isPingPong = (pStr.startsWith('1010') || pStr.startsWith('0101'));
+        if (curStreak >= 3) { finalPred = h[0]; logicMsg = "THUẬN TREND ĐÀ BỆT"; confBase = 89; } 
+        else if (isPingPong) { finalPred = h[0] === 1 ? 0 : 1; logicMsg = "BÁM NHỊP PING PONG"; confBase = 86; }
+        else { finalPred = h[0]; logicMsg = "GIAO THOA CẦU NGẮN"; confBase = 75; }
+    }
+
+    let variance = (h[0] === h[1] && curStreak < 3 ? 2 : 0);
+    let finalConf = Math.min(Math.max(confBase + variance, 65), 99); 
+
+    return {
+        pred: finalPred,
+        rate: finalConf,
+        trend: logicMsg
+    };
+}
+
+/* ================= GIAO DIỆN HIỂN THỊ ================= */
+function capNhatDuDoan() {
+    const analysis = superViLongAlgorithm();
+    if (analysis.pred === -1) return;
+
+    const ddText = analysis.pred === 1 ? "TÀI" : "XỈU";
+    const ddColorClass = analysis.pred === 1 ? "tai" : "xiu";
+    const rateColor = analysis.rate >= 90 ? "#00ff88" : (analysis.rate >= 80 ? "#ffd966" : "#ff4466");
+
+    box.style.borderColor = analysis.pred === 1 ? "#00ff88" : "#ff4466";
+    box.innerHTML = `
+        <div class="vip-border" style="background:linear-gradient(90deg, ${box.style.borderColor}, transparent, ${box.style.borderColor})"></div>
+        <div class="radar"></div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start">
+            <span style="font-size:10px; color:#aaa; font-family: monospace;">ROBOT HỒ QUỐC</span>
+            <span style="font-size:10px; color:#00ff88; font-weight:bold; animation: blink 1s infinite;">LIVE REC</span>
+        </div>
+        <div style="margin:12px 0; text-align:center">
+            <div style="font-size:11px; color:#ffd966; letter-spacing: 1px;">PHIÊN: <b style="font-size:13px">#${phienHienTai + 1}</b></div>
+            <div style="font-size:32px; font-weight:900; margin:5px 0" class="${ddColorClass}">
+                ${ddText} <span style="font-size:18px; vertical-align:middle; filter: grayscale(0);">🔥</span>
+            </div>
+            <div style="font-size:11px; color:#00ffff; font-weight:bold; margin-top:2px; text-transform:uppercase; letter-spacing:0.5px">${analysis.trend}</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.6); padding:10px; border-radius:8px; border: 1px solid rgba(255,255,255,0.15)">
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom: 6px;">
+                <span style="color: #ddd;">TỶ LỆ NỔ:</span>
+                <b class="percent" style="color: ${rateColor}; text-shadow: 0 0 5px ${rateColor};">${analysis.rate}%</b>
+            </div>
+            <div style="width:100%; height:6px; background:#222; border-radius:3px; overflow:hidden">
+                <div style="width:${analysis.rate}%; height:100%; background:linear-gradient(90deg, ${rateColor}, #fff); box-shadow:0 0 10px ${rateColor}"></div>
+            </div>
+        </div>
+    `;
+}
+
+function hienKetQua(phienId, kqText, x1, x2, x3) {
+    const isTai = kqText === "TÀI" || kqText === "T" || (x1+x2+x3 > 10);
+    const kqColor = isTai ? "#00ff88" : "#ff4466";
+    const analysisStr = isTai ? "TÀI" : "XỈU";
+
+    box.style.borderColor = "#ffd966";
+    box.innerHTML = `
+        <div class="vip-border" style="background:linear-gradient(90deg, #ffd966, transparent, #ffd966)"></div>
+        <div style="text-align:center; padding: 10px 0;">
+            <div style="font-size:12px; letter-spacing:1px; color:#ffd966; font-weight: bold;">--- PHIÊN #${phienId} ---</div>
+            <div style="font-size:35px; font-weight:900; margin:12px 0; letter-spacing:6px; display: flex; justify-content: center; gap: 8px;">
+                <span style="background: #222; padding: 2px 8px; border-radius: 6px; box-shadow: inset 0 0 8px rgba(255,255,255,0.2); text-shadow:0 0 10px #fff">${x1}</span>
+                <span style="background: #222; padding: 2px 8px; border-radius: 6px; box-shadow: inset 0 0 8px rgba(255,255,255,0.2); text-shadow:0 0 10px #fff">${x2}</span>
+                <span style="background: #222; padding: 2px 8px; border-radius: 6px; box-shadow: inset 0 0 8px rgba(255,255,255,0.2); text-shadow:0 0 10px #fff">${x3}</span>
+            </div>
+            <div style="padding:6px 15px; border:2px dashed ${kqColor}; display:inline-block; border-radius:8px; background: rgba(0,0,0,0.5);">
+                <b style="font-size:22px; color:${kqColor}; text-shadow: 0 0 10px ${kqColor};">${analysisStr}</b>
+            </div>
+            <div style="margin-top:12px; font-size:11px; color:#aaa"><i class="fas fa-microchip"></i> ĐANG NẠP KẾT QUẢ VÀO AI...</div>
+        </div>
+    `;
+}
+
+/* ================= VẬN HÀNH LOOP ================= */
+async function runLoop() {
+    const data = await fetchSafe();
+    if (!data || !data.list || data.list.length === 0) return;
+
+    const latest = data.list[0];
+
+    // Cập nhật lại toàn bộ mảng lịch sử (Để AI luôn chuẩn 100%)
+    historyGears = data.list.slice(0, 40).map(x => { 
+        let sum = (x.dice1 || 0) + (x.dice2 || 0) + (x.dice3 || 0);
+        if(sum === 0 && x.resultTruyenThong) return (x.resultTruyenThong === 'TAI' || x.resultTruyenThong === 'TÀI') ? 1 : 0;
+        return sum > 10 ? 1 : 0;
+    });
+    rawHistory = data.list.slice(0, 40);
+
+    // Phiên đầu tiên khi load
+    if (phienHienTai === 0) {
+        phienHienTai = latest.id;
+        capNhatDuDoan();
+        return;
+    }
+
+    // Khi có kết quả phiên mới
+    if (latest.id > phienHienTai && !trangThaiDangHienKetQua) {
+        trangThaiDangHienKetQua = true;
+        
+        let sum = (latest.dice1 || 0) + (latest.dice2 || 0) + (latest.dice3 || 0);
+        let resultText = (sum > 10) ? "TÀI" : "XỈU";
+        if (sum === 0 && latest.resultTruyenThong) {
+            let r = latest.resultTruyenThong.toUpperCase().trim();
+            resultText = (r === 'TAI' || r === 'TÀI') ? "TÀI" : "XỈU";
+        }
+
+        // Hiện kết quả nháy mắt
+        hienKetQua(latest.id, resultText, latest.dice1||0, latest.dice2||0, latest.dice3||0);
+
+        // Đợi 3.5s rồi nạp lại dự đoán ván tiếp theo
+        setTimeout(() => {
+            phienHienTai = latest.id;
+            capNhatDuDoan();
+            trangThaiDangHienKetQua = false;
+        }, 3500);
+    }
+}
+
+// Bắt đầu vòng lặp
+setInterval(runLoop, 3000);
+
+// Chạy lần đầu ngay lập tức
+(async function init() {
+    const data = await fetchSafe();
+    if (data && data.list && data.list.length > 0) {
+        phienHienTai = data.list[0].id;
+        historyGears = data.list.slice(0, 40).map(x => { 
+            let sum = (x.dice1 || 0) + (x.dice2 || 0) + (x.dice3 || 0);
+            if(sum === 0 && x.resultTruyenThong) return (x.resultTruyenThong === 'TAI' || x.resultTruyenThong === 'TÀI') ? 1 : 0;
+            return sum > 10 ? 1 : 0;
+        });
+        rawHistory = data.list.slice(0, 40);
+        capNhatDuDoan();
+    }
+})();
+
+</script>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</body>
+</html>
