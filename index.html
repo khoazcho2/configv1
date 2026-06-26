@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robot Hồ Quốc</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#000; color:#fff; font-family:'Courier New',monospace; overflow:hidden; width:100vw; height:100vh; }
+.top-bar { position:fixed;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#00ff88,#ffd966,#00ff88);background-size:200% auto;animation:flow 2s linear infinite;z-index:9998; }
+@keyframes flow{0%{background-position:0%}100%{background-position:200%}}
+
+#robot { position:fixed;top:50%;left:8px;z-index:9999;display:flex;align-items:center;cursor:grab;user-select:none; }
+#robot img,.robot-emoji-fallback { width:55px;height:55px;pointer-events:none;filter:drop-shadow(0 0 10px #00ff88);animation:hoverRobot 3s ease-in-out infinite; }
+.robot-emoji-fallback{display:flex;align-items:center;justify-content:center;font-size:36px;}
+@keyframes hoverRobot{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+#robot-info{background:rgba(0,15,30,0.92);border:1.5px solid #00ff88;border-radius:10px;padding:7px 10px;margin-left:8px;min-width:150px;max-width:calc(100vw - 80px);backdrop-filter:blur(10px);cursor:pointer;}
+#robot-info h3{color:#00ff88;font-size:12px;margin-bottom:2px;display:flex;align-items:center;gap:5px;}
+#robot-info p{color:#aaa;font-size:9px;margin:0;}
+.status-dot{display:inline-block;width:6px;height:6px;background:#00ff88;border-radius:50%;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+.ctrl-btns{position:absolute;top:-36px;right:0;display:flex;gap:5px;}
+.ctrl-btn{background:#1a1a2e;border:1.5px solid #ffd966;width:28px;height:28px;border-radius:50%;cursor:pointer;color:#ffd966;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+.ctrl-btn:hover{background:#ffd966;color:#000;}
+.ctrl-btn.green{border-color:#00ff88;color:#00ff88;}
+.ctrl-btn.green:hover{background:#00ff88;color:#000;}
+
+/* OVERLAY */
+#pred-overlay {
+    position:fixed;top:8px;right:8px;width:175px;
+    background:rgba(0,8,20,0.97);
+    border:2px solid #00ff88;border-radius:12px;
+    padding:9px;z-index:99999;
+    backdrop-filter:blur(15px);
+    box-shadow:0 0 20px rgba(0,255,136,0.3);
+    font-family:monospace;color:#fff;cursor:grab;user-select:none;
+}
+.ov-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(0,255,136,0.3);padding-bottom:6px;margin-bottom:7px;}
+.ov-title{color:#00ff88;font-size:11px;font-weight:bold;}
+.ov-phien{color:#ffd966;font-size:9px;margin-top:1px;}
+.close-btn{background:rgba(255,50,50,0.85);border:none;color:#fff;border-radius:50%;width:20px;height:20px;font-size:13px;font-weight:bold;cursor:pointer;line-height:20px;padding:0;display:flex;align-items:center;justify-content:center;}
+
+.ratio-row{display:flex;gap:4px;margin-bottom:6px;}
+.ratio-tai{flex:1;text-align:center;padding:2px 0;border-radius:4px;background:rgba(0,255,136,0.12);border:1px solid #00ff88;color:#00ff88;font-size:9px;font-weight:bold;}
+.ratio-xiu{flex:1;text-align:center;padding:2px 0;border-radius:4px;background:rgba(255,80,80,0.12);border:1px solid #ff4444;color:#ff4444;font-size:9px;font-weight:bold;}
+
+/* CARD dự đoán */
+.pred-card {
+    border-radius:9px;padding:8px 7px;text-align:center;
+    margin-bottom:7px;border:2px solid #333;
+    background:rgba(255,255,255,0.03);
+}
+.pred-card .card-tag{font-size:8px;color:#aaa;margin-bottom:4px;letter-spacing:0.5px;}
+.pred-card .card-val{font-size:34px;font-weight:900;letter-spacing:1px;}
+.pred-card .card-conf{font-size:9px;margin-top:3px;}
+
+/* NHẤP NHÁY cho phiên hiện tại */
+@keyframes pulseNow {
+    0%,100%{opacity:1;text-shadow:0 0 25px currentColor,0 0 50px currentColor;}
+    50%{opacity:0.35;text-shadow:0 0 5px currentColor;}
+}
+/* Nhấp nháy nhẹ hơn cho phiên tiếp theo */
+@keyframes pulseNext {
+    0%,100%{opacity:1;text-shadow:0 0 12px currentColor;}
+    50%{opacity:0.6;text-shadow:0 0 3px currentColor;}
+}
+
+.conf-bar-wrap{display:flex;align-items:center;gap:4px;margin:4px 0 0;}
+.conf-bar-bg{flex:1;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;}
+.conf-bar-fill{height:100%;border-radius:3px;transition:width 0.4s;}
+.conf-num{font-size:10px;font-weight:bold;min-width:28px;}
+
+.bet-box{border-radius:6px;padding:5px 6px;text-align:center;margin-bottom:7px;border:1px solid #444;}
+.bet-main{font-size:11px;font-weight:bold;}
+.bet-sub{font-size:8px;color:#aaa;margin-top:1px;}
+
+.divider{border:none;border-top:1px solid rgba(0,255,136,0.15);margin:6px 0;}
+
+.acc-row{text-align:center;}
+.acc-label{font-size:8px;color:#666;}
+.acc-val{font-size:13px;font-weight:bold;color:#ffd966;}
+</style>
+</head>
+<body>
+<div class="top-bar"></div>
+<iframe src="https://lc79b.bet" id="gameFrame"
+    style="position:fixed;inset:0;width:100%;height:100%;border:none;z-index:1;"
+    allow="autoplay;fullscreen;payment;clipboard-write" allowfullscreen referrerpolicy="no-referrer"></iframe>
+
+<!-- ROBOT -->
+<div id="robot">
+    <img src="https://i.postimg.cc/rwkZQhxp/Robot.gif" alt="Robot"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="robot-emoji-fallback" style="display:none">🤖</span>
+    <div id="robot-info" onclick="toggleOverlay()" title="Ẩn/Hiện">
+        <h3><span class="status-dot"></span> ROBOT HỒ QUỐC</h3>
+        <p id="robot-status">Đang kết nối...</p>
+        <p id="fetch-debug" style="font-size:8px;margin-top:2px;color:#ffd966;">⏳ Chờ API...</p>
+    </div>
+    <div class="ctrl-btns">
+        <button class="ctrl-btn green" id="analysisBtn" title="Dashboard">📊</button>
+        <button class="ctrl-btn" id="kellyBtn" title="Kelly">💰</button>
+    </div>
+</div>
+
+<!-- OVERLAY -->
+<div id="pred-overlay">
+    <div class="ov-header">
+        <div>
+            <div class="ov-title">🤖 HỒ QUỐC AI</div>
+            <div class="ov-phien" id="ov-phien">Chờ dữ liệu...</div>
+        </div>
+        <button class="close-btn" onclick="toggleOverlay()">−</button>
+    </div>
+
+    <!-- Tỉ lệ lịch sử -->
+    <div class="ratio-row">
+        <div class="ratio-tai" id="ov-tai">TÀI 50%</div>
+        <div class="ratio-xiu" id="ov-xiu">XIU 50%</div>
+    </div>
+
+    <!-- PHIÊN HIỆN TẠI -->
+    <div class="pred-card" id="card-now">
+        <div class="card-tag">⚡ PHIÊN HIỆN TẠI — CƯỢC NGAY</div>
+        <div class="card-val" id="now-val" style="color:#00ff88;animation:pulseNow 0.8s ease-in-out infinite;">---</div>
+        <div class="conf-bar-wrap">
+            <div class="conf-bar-bg"><div class="conf-bar-fill" id="now-bar" style="width:50%;background:linear-gradient(90deg,#00ff88,#00ddff)"></div></div>
+            <span class="conf-num" id="now-conf" style="color:#00ff88">50%</span>
+        </div>
+    </div>
+
+    <!-- Bet box hiện tại -->
+    <div class="bet-box" id="bet-now">
+        <div class="bet-main" id="bet-now-label">⏳ Đang tính...</div>
+        <div class="bet-sub" id="bet-now-sub"></div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- PHIÊN TIẾP THEO -->
+    <div class="pred-card" id="card-next">
+        <div class="card-tag">🔮 PHIÊN TIẾP THEO</div>
+        <div class="card-val" id="next-val" style="color:#aaa;animation:pulseNext 1.2s ease-in-out infinite;">---</div>
+        <div class="conf-bar-wrap">
+            <div class="conf-bar-bg"><div class="conf-bar-fill" id="next-bar" style="width:50%;background:linear-gradient(90deg,#888,#aaa)"></div></div>
+            <span class="conf-num" id="next-conf" style="color:#aaa">50%</span>
+        </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="acc-row">
+        <div class="acc-label">ACCURACY 20 phiên gần</div>
+        <div class="acc-val" id="acc-val">--%</div>
+    </div>
+</div>
+
+<script>
+'use strict';
+const DB_KEY='taixiu_history', SESSION_LOG_KEY='taixiu_sessions_json';
+const API_URL='https://wtxmd52.tele68.com/v1/txmd5/lite-sessions?cp=R&cl=R&pf=web&at=3959701241b686f12e01bfe9c3a319b8';
+let lastPhienId=null, predictions=[], historyGears=[], rawHistory=[];
+let overlayVisible=true;
+
+function toggleOverlay(){
+    overlayVisible=!overlayVisible;
+    document.getElementById('pred-overlay').style.display=overlayVisible?'block':'none';
+}
+
+/* DRAG robot */
+function setupDrag(){
+    const robot=document.getElementById('robot');
+    if(!robot)return;
+    let drag=false,sx=0,sy=0;
+    setTimeout(()=>{robot.style.top=(window.innerHeight/2-robot.offsetHeight/2)+'px';},100);
+    robot.addEventListener('mousedown',e=>{drag=true;const r=robot.getBoundingClientRect();sx=e.clientX-r.left;sy=e.clientY-r.top;e.preventDefault();});
+    robot.addEventListener('touchstart',e=>{drag=true;const t=e.touches[0],r=robot.getBoundingClientRect();sx=t.clientX-r.left;sy=t.clientY-r.top;},{passive:true});
+    document.addEventListener('mousemove',e=>{if(!drag)return;robot.style.left=(e.clientX-sx)+'px';robot.style.top=(e.clientY-sy)+'px';});
+    document.addEventListener('touchmove',e=>{if(!drag)return;const t=e.touches[0];robot.style.left=(t.clientX-sx)+'px';robot.style.top=(t.clientY-sy)+'px';},{passive:false});
+    document.addEventListener('mouseup',()=>{drag=false;});
+    document.addEventListener('touchend',()=>{drag=false;});
+}
+
+/* DRAG overlay */
+function setupOverlayDrag(){
+    const o=document.getElementById('pred-overlay');
+    if(!o)return;
+    let drag=false,sx=0,sy=0;
+    o.addEventListener('mousedown',e=>{if(e.target.tagName==='BUTTON')return;drag=true;const r=o.getBoundingClientRect();sx=e.clientX-r.left;sy=e.clientY-r.top;e.stopPropagation();});
+    o.addEventListener('touchstart',e=>{if(e.target.tagName==='BUTTON')return;drag=true;const t=e.touches[0],r=o.getBoundingClientRect();sx=t.clientX-r.left;sy=t.clientY-r.top;e.stopPropagation();},{passive:true});
+    document.addEventListener('mousemove',e=>{if(!drag)return;o.style.left=(e.clientX-sx)+'px';o.style.top=(e.clientY-sy)+'px';o.style.right='auto';});
+    document.addEventListener('touchmove',e=>{if(!drag)return;const t=e.touches[0];o.style.left=(t.clientX-sx)+'px';o.style.top=(t.clientY-sy)+'px';o.style.right='auto';},{passive:false});
+    document.addEventListener('mouseup',()=>{drag=false;});
+    document.addEventListener('touchend',()=>{drag=false;});
+}
+
+/* LOGGER */
+const logger={
+    data:[],
+    init(){try{this.data=JSON.parse(localStorage.getItem(DB_KEY))||[];}catch(e){this.data=[];}},
+    log(id,d1,d2,d3,result){
+        try{
+            const sum=(parseInt(d1)||0)+(parseInt(d2)||0)+(parseInt(d3)||0);
+            const isTai=sum>10||(sum===0&&String(result||'').toUpperCase().includes('TÀI'));
+            this.data.push({id,timestamp:Date.now(),dice1:+d1||0,dice2:+d2||0,dice3:+d3||0,sum,actual:isTai?'TAI':'XIU',raw:result});
+            localStorage.setItem(DB_KEY,JSON.stringify(this.data));
+        }catch(e){}
+    },
+    export(){let c='id,timestamp,dice1,dice2,dice3,sum,actual,raw\n';this.data.forEach(r=>{c+=`${r.id},${r.timestamp},${r.dice1},${r.dice2},${r.dice3},${r.sum},${r.actual},"${r.raw}"\n`;});return c;}
+};
+
+function calculateStats(){const tai=logger.data.filter(r=>r.actual==='TAI').length,total=logger.data.length;if(!total)return{total:0,tai:0,xiu:0,tai_pct:0,xiu_pct:0};return{total,tai,xiu:total-tai,tai_pct:tai/total*100,xiu_pct:(total-tai)/total*100};}
+
+function saveSessionJSON(d){try{const s=localStorage.getItem(SESSION_LOG_KEY);const a=s?JSON.parse(s):[];a.push(d);localStorage.setItem(SESSION_LOG_KEY,JSON.stringify(a));}catch(e){}}
+function exportSessionsJSON(){const s=localStorage.getItem(SESSION_LOG_KEY);if(!s){alert('No data');return;}const b=new Blob([s],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='sessions_'+Date.now()+'.json';a.click();URL.revokeObjectURL(u);}
+
+function openDashboard(){
+    if(!logger.data.length){alert('Chưa có dữ liệu');return;}
+    const st=calculateStats();
+    const m=document.createElement('div');
+    m.style.cssText='position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.96);overflow-y:auto;padding:20px;color:#fff;font-family:monospace;';
+    m.innerHTML=`<div style="max-width:600px;margin:0 auto;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:14px;border-bottom:2px solid #00ff88;padding-bottom:8px;">
+            <h2 style="color:#00ff88;margin:0;">📊 DASHBOARD</h2>
+            <button onclick="this.closest('[style*=fixed]').remove()" style="background:#ff4466;border:none;padding:6px 14px;cursor:pointer;border-radius:4px;color:#fff;font-weight:bold;">CLOSE</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+            <div style="background:rgba(0,255,136,0.08);padding:12px;border-left:3px solid #00ff88;border-radius:4px;">
+                <div style="font-size:10px;color:#aaa;">TOTAL</div>
+                <div style="color:#00ff88;font-size:22px;font-weight:bold;">${st.total}</div>
+            </div>
+            <div style="background:rgba(255,215,0,0.08);padding:12px;border-left:3px solid #ffd966;border-radius:4px;">
+                <div style="font-size:10px;color:#aaa;">TÀI / XIU</div>
+                <div style="color:#ffd966;font-size:13px;font-weight:bold;">${st.tai} / ${st.xiu}</div>
+                <div style="color:#aaa;font-size:9px;">${st.tai_pct.toFixed(1)}% / ${st.xiu_pct.toFixed(1)}%</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button onclick="(function(){const b=new Blob([logger.export()],{type:'text/csv'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='taixiu_'+Date.now()+'.csv';a.click();URL.revokeObjectURL(u);})()" style="background:#00ff88;border:none;padding:8px 14px;cursor:pointer;border-radius:4px;color:#000;font-weight:bold;">📥 CSV</button>
+            <button onclick="exportSessionsJSON()" style="background:#ffd966;border:none;padding:8px 14px;cursor:pointer;border-radius:4px;color:#000;font-weight:bold;">📥 JSON</button>
+        </div>
+    </div>`;
+    document.body.appendChild(m);
+}
+
+function setupKellyBtn(){
+    const btn=document.getElementById('kellyBtn');
+    if(!btn)return;
+    btn.addEventListener('click',()=>{
+        if(logger.data.length<30){alert('Cần ít nhất 30 phiên');return;}
+        const st=calculateStats(),p=st.total>0?st.tai/st.total:0.5,k=Math.max(2*p-1,0);
+        alert(`Kelly:\nWin Rate: ${(p*100).toFixed(2)}%\nKelly f*: ${k.toFixed(4)}\n¼K: ${(k*0.25*100).toFixed(2)}%\n½K: ${(k*0.5*100).toFixed(2)}%`);
+    });
+}
+
+/* ===== 15 TẦNG ===== */
+function algo15(h){
+    if(!h||h.length<20)return{pred:-1,rate:0,trend:'DATA<20'};
+    let mp=-1,sp=-1,pp=-1,fp=-1,ep=-1,ac=-1,vp=-1,map=-1,rp=-1,kp=-1,cp2=-1,hp=-1,gp=-1,rcp=-1,cop=-1;
+
+    // L1 MARKOV
+    const tr={'0to0':0,'0to1':0,'1to0':0,'1to1':0};
+    for(let i=0;i<h.length-1;i++){const k=h[i]+'to'+h[i+1];if(tr[k]!==undefined)tr[k]++;}
+    const p01=tr['0to1']/(tr['0to0']+tr['0to1']||1),p10=tr['1to0']/(tr['1to1']+tr['1to0']||1);
+    if(h[0]===0&&p01>0.6)mp=1; else if(h[0]===1&&p10>0.6)mp=0;
+    else if(h[0]===0&&p01<0.4)mp=0; else if(h[0]===1&&p10<0.4)mp=1;
+
+    // L2 STREAK
+    let stk=1;for(let i=0;i<h.length-1;i++){if(h[i]===h[i+1])stk++;else break;}
+    if(stk>=4)sp=h[0]; else if(stk===1)sp=h[0]===1?0:1;
+
+    // L3 PATTERN
+    if(h.length>=16){const pat=h.slice(0,4);let m=0;for(let i=4;i<h.length-3;i+=4){const sg=h.slice(i,i+4);if(sg[0]===pat[0]&&sg[1]===pat[1]&&sg[2]===pat[2]&&sg[3]===pat[3])m++;}if(m>=2)pp=pat[0];}
+
+    // L4 FREQ
+    if(h.length>=25){const sg=h.slice(0,25),tC=sg.filter(x=>x===1).length,xC=25-tC;if(tC>=18)fp=0;else if(xC>=18)fp=1;else if(tC>=15)fp=0;else if(xC>=15)fp=1;}
+
+    // L5 ENTROPY
+    let es=0;for(let i=0;i<h.length-1;i++){if(h[i]!==h[i+1])es++;}
+    const er=es/(h.length-1);ep=er<0.4?h[0]:(er>0.6?(h[0]===1?0:1):-1);
+
+    // L6 AUTOCORR
+    if(h.length>=10){let c=0;const mn=h.slice(0,10).reduce((a,b)=>a+b)/10;for(let i=0;i<7;i++)c+=(h[i]-mn)*(h[i+3]-mn);if(Math.abs(c)>1.5)ac=c>0?h[0]:(h[0]===1?0:1);}
+
+    // L7 VOL
+    if(h.length>=20){const pr=h.slice(0,20),mn=pr.reduce((a,b)=>a+b)/20,v=pr.reduce((a,b)=>a+(b-mn)*(b-mn),0)/20,sd=Math.sqrt(v);if(pr[0]>mn+sd)vp=0;else if(pr[0]<mn-sd)vp=1;}
+
+    // L8 MA
+    if(h.length>=15){const m5=h.slice(0,5).reduce((a,b)=>a+b)/5,m10=h.slice(0,10).reduce((a,b)=>a+b)/10;if(m5>m10+0.15)map=1;else if(m5<m10-0.15)map=0;}
+
+    // L9 RUNS
+    if(h.length>=15){let r=1;for(let i=0;i<h.length-1;i++){if(h[i]!==h[i+1])r++;}const er2=2*h.length*0.5*0.5/(h.length-1);if(r<er2*0.6)rp=h[0];else if(r>er2*1.4)rp=h[0]===1?0:1;}
+
+    // L10 KELLY
+    if(h.length>=40){const w=h.slice(0,40).filter(x=>x===1).length,p=w/40,k=2*p-1;if(Math.abs(k)>0.15)kp=k>0?1:0;}
+
+    // L11 CHI2
+    if(h.length>=30){const ob=[h.slice(0,30).filter(x=>x===0).length,h.slice(0,30).filter(x=>x===1).length];let chi=0;for(let i=0;i<2;i++)chi+=Math.pow(ob[i]-15,2)/15;if(chi>5)cp2=ob[1]>15?1:0;}
+
+    // L12 HURST
+    if(h.length>=25){const h1=h.slice(0,Math.floor(h.length/2)),h2=h.slice(Math.floor(h.length/2));const m1=h1.reduce((a,b)=>a+b)/h1.length,m2=h2.reduce((a,b)=>a+b)/h2.length;if(Math.abs(m2-m1)>0.2)hp=m2>m1?1:0;}
+
+    // L13 GARCH
+    if(h.length>=20){const ret=[];for(let i=1;i<Math.min(20,h.length);i++)ret.push(h[i]-h[i-1]);const vr=ret.reduce((a,b)=>a+b*b,0)/ret.length,lv=Math.abs(ret[ret.length-1]);if(lv>Math.sqrt(vr)*1.8)gp=h[0]===1?0:1;}
+
+    // L14 RECUR
+    if(h.length>=10){let rc=0;for(let i=0;i<7;i++){if(h[i]===h[i+3])rc++;}if(rc>=5)rcp=h[0];}
+
+    // L15 COPULA
+    if(h.length>=15){let co=0,di=0;for(let i=0;i<10;i++){for(let j=i+1;j<10;j++){if((h[i]===1&&h[j]===1)||(h[i]===0&&h[j]===0))co++;else di++;}}const tau=(co-di)/(co+di||1);if(Math.abs(tau)>0.35)cop=tau>0?h[0]:(h[0]===1?0:1);}
+
+    const votes=[
+        {pred:mp,w:1.8,name:'MKV'},{pred:sp,w:1.7,name:'STK'},{pred:pp,w:1.6,name:'PAT'},
+        {pred:fp,w:1.7,name:'FRQ'},{pred:ep,w:1.2,name:'ENT'},{pred:ac,w:1.3,name:'ACR'},
+        {pred:vp,w:1.2,name:'VOL'},{pred:map,w:1.0,name:'MA'},{pred:rp,w:1.1,name:'RUN'},
+        {pred:kp,w:1.4,name:'KLY'},{pred:cp2,w:1.3,name:'CHI'},{pred:hp,w:1.2,name:'HRT'},
+        {pred:gp,w:1.1,name:'GCH'},{pred:rcp,w:1.0,name:'REC'},{pred:cop,w:1.2,name:'COP'}
+    ];
+    let tS=0,xS=0,fired=[];
+    for(const v of votes){if(v.pred===-1)continue;fired.push(v.name);if(v.pred===1)tS+=v.w;else xS+=v.w;}
+    if(fired.length<2)return{pred:-1,rate:0,trend:'LAYERS<2'};
+    const tot=tS+xS,fp2=tS>xS?1:0,conf=Math.round(Math.max(tS,xS)/tot*100);
+    return{pred:fp2,rate:Math.min(Math.max(conf,51),99),trend:fired.slice(0,5).join('·')};
+}
+
+/* ===== CALC PREDICTION từ 1 bộ history ===== */
+function calcPred(h, taiPct) {
+    const a = algo15(h);
+    if (a.pred === -1) {
+        return { prediction: taiPct >= 50 ? 'TÀI' : 'XIU', confidence: Math.max(taiPct, 100-taiPct), trend: 'ĐANG LẤY DỮ LIỆU' };
+    }
+    const pred = a.pred === 1 ? 'TÀI' : 'XIU';
+    const bias = pred === 'TÀI' ? taiPct : (100 - taiPct);
+    const conf = Math.min(Math.max(Math.round(a.rate * 0.6 + bias * 0.4), 51), 97);
+    return { prediction: pred, confidence: conf, trend: a.trend };
+}
+
+/* ===== UPDATE UI ===== */
+function setCard(valId, barId, confId, cardId, pred, conf, animate) {
+    const color = pred === 'TÀI' ? '#00ff88' : '#ff4444';
+    const bg    = pred === 'TÀI' ? 'rgba(0,255,136,0.12)' : 'rgba(255,68,68,0.12)';
+
+    const card = document.getElementById(cardId);
+    card.style.background = bg;
+    card.style.borderColor = color;
+
+    const val = document.getElementById(valId);
+    val.textContent = pred;
+    val.style.color = color;
+    val.style.animationName = animate;
+
+    document.getElementById(barId).style.width = conf + '%';
+    document.getElementById(barId).style.background = `linear-gradient(90deg,${color},#00ddff)`;
+    document.getElementById(confId).textContent = conf + '%';
+    document.getElementById(confId).style.color = color;
+}
+
+function setBetBox(boxId, labelId, subId, pred, conf) {
+    const box = document.getElementById(boxId);
+    const lbl = document.getElementById(labelId);
+    const sub = document.getElementById(subId);
+    const color = pred === 'TÀI' ? '#00ff88' : '#ff4444';
+    if (conf >= 85) {
+        box.style.background = 'rgba(255,215,0,0.18)';
+        box.style.border = '2px solid #ffd966';
+        lbl.style.color = '#ffd966';
+        lbl.innerHTML = `🎯 CƯỢC <span style="color:${color}">${pred}</span>`;
+        sub.textContent = 'Tin cậy ' + conf + '%';
+    } else if (conf >= 70) {
+        box.style.background = 'rgba(0,200,255,0.08)';
+        box.style.border = '1.5px solid #00ccff';
+        lbl.style.color = '#00ccff';
+        lbl.innerHTML = `⚡ CÂN NHẮC <span style="color:${color}">${pred}</span>`;
+        sub.textContent = 'Tin cậy ' + conf + '%';
+    } else {
+        box.style.background = 'rgba(100,100,100,0.08)';
+        box.style.border = '1px solid #444';
+        lbl.style.color = '#888';
+        lbl.textContent = '⏸️ BỎ QUA PHIÊN NÀY';
+        sub.textContent = 'Tin cậy chỉ ' + conf + '%';
+    }
+}
+
+/* ===== FETCH ===== */
+function setupFetchLoop() { fetchAndLog(); setInterval(fetchAndLog, 2000); }
+
+async function fetchAndLog() {
+    const dbg = document.getElementById('fetch-debug');
+    try {
+        const res = await Promise.race([
+            fetch(API_URL, {cache:'no-store'}),
+            new Promise((_,rj)=>setTimeout(()=>rj(new Error('Timeout')),5000))
+        ]);
+        if(dbg) dbg.textContent='⚠️ HTTP '+res.status;
+        if(!res.ok) return;
+        const data = await res.json();
+        if(!data?.list?.length) return;
+        const latest = data.list[0];
+        if(!latest?.id) return;
+        if(dbg) dbg.textContent='✅ OK #'+latest.id;
+
+        // Xây dựng historyGears từ list (index 0 = phiên mới nhất đã có kết quả)
+        historyGears = data.list.slice(0,50).map(x=>{
+            const s=(x.dice1||0)+(x.dice2||0)+(x.dice3||0);
+            if(s===0&&x.resultTruyenThong) return x.resultTruyenThong==='TAI'?1:0;
+            return s>10?1:0;
+        });
+
+        if(latest.id !== lastPhienId) {
+            lastPhienId = latest.id;
+            if(latest.dice1&&latest.dice2&&latest.dice3)
+                logger.log(latest.id, latest.dice1, latest.dice2, latest.dice3, latest.result||'');
+            buildAndDisplay(latest, data.list);
+        }
+    } catch(e) {
+        if(dbg) dbg.textContent='❌ '+(e.message||'blocked');
+    }
+}
+
+function buildAndDisplay(latest, fullList) {
+    try {
+        const phienId = latest.id;
+        const d1=parseInt(latest.dice1)||0, d2=parseInt(latest.dice2)||0, d3=parseInt(latest.dice3)||0;
+        const sum=d1+d2+d3;
+
+        // Tỉ lệ lịch sử 30 phiên
+        const h30 = historyGears.slice(0,30);
+        const taiCnt = h30.filter(x=>x===1).length;
+        const taiPct = h30.length > 0 ? Math.round(taiCnt/h30.length*100) : 50;
+        const xiuPct = 100 - taiPct;
+
+        // ── PHIÊN HIỆN TẠI ──
+        // API trả về list[0] = phiên vừa kết thúc (có dice)
+        // Phiên HIỆN TẠI đang chạy = chưa có kết quả
+        // Ta dùng historyGears (tất cả lịch sử đã xong) để predict phiên đang chạy
+        const nowResult = calcPred(historyGears, taiPct);
+
+        // ── PHIÊN TIẾP THEO ──
+        // Simulate: thêm kết quả dự đoán hiện tại vào đầu history, rồi predict tiếp
+        const futureH = [nowResult.prediction === 'TÀI' ? 1 : 0, ...historyGears];
+        const nextResult = calcPred(futureH, taiPct);
+
+        // Accuracy
+        const result = String(latest.result||'').toUpperCase();
+        const isTai = sum>10||(sum===0&&(result.includes('TÀI')||result.includes('TAI')));
+        const actualResult = isTai ? 'TÀI' : 'XIU';
+
+        // Lấy prediction trước đó để tính accuracy (dùng historyGears[1:])
+        const prevH = historyGears.slice(1);
+        const prevPred = calcPred(prevH, taiPct);
+        const isCorrect = prevPred.prediction === actualResult;
+        predictions.push({phienId, predicted:prevPred.prediction, actual:actualResult, correct:isCorrect, timestamp:Date.now()});
+
+        const recent = predictions.slice(-20);
+        const recentAcc = recent.length > 0 ? (recent.filter(p=>p.correct).length/recent.length)*100 : 0;
+
+        // ── CẬP NHẬT UI ──
+        document.getElementById('ov-phien').textContent = 'Phiên: ' + phienId;
+        document.getElementById('ov-tai').textContent = 'TÀI ' + taiPct + '%';
+        document.getElementById('ov-xiu').textContent = 'XIU ' + xiuPct + '%';
+
+        // Card phiên hiện tại — nhấp nháy mạnh
+        setCard('now-val','now-bar','now-conf','card-now', nowResult.prediction, nowResult.confidence, 'pulseNow');
+        setBetBox('bet-now','bet-now-label','bet-now-sub', nowResult.prediction, nowResult.confidence);
+
+        // Card phiên tiếp theo — nhấp nháy nhẹ
+        setCard('next-val','next-bar','next-conf','card-next', nextResult.prediction, nextResult.confidence, 'pulseNext');
+
+        document.getElementById('acc-val').textContent = recentAcc.toFixed(1) + '%';
+
+        const rs = document.getElementById('robot-status');
+        if(rs) rs.textContent = `Hiện: ${nowResult.prediction} → Kế: ${nextResult.prediction}`;
+
+        if(overlayVisible) document.getElementById('pred-overlay').style.display='block';
+
+        saveSessionJSON({phienId, timestamp:new Date().toISOString(),
+            nowPred:nowResult.prediction, nowConf:nowResult.confidence,
+            nextPred:nextResult.prediction, nextConf:nextResult.confidence,
+            actual:actualResult, prevCorrect:isCorrect,
+            accuracy_20:recentAcc, trend:nowResult.trend});
+
+    } catch(e){ console.error('buildAndDisplay error:',e); }
+}
+
+/* INIT */
+document.addEventListener('DOMContentLoaded',()=>{
+    setupDrag();
+    setupOverlayDrag();
+    logger.init();
+    document.getElementById('analysisBtn').addEventListener('click', openDashboard);
+    setupKellyBtn();
+    setupFetchLoop();
+});
+</script>
+</body>
+</html>
