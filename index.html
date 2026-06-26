@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robot Hồ Quốc</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#000; color:#fff; font-family:'Courier New',monospace; overflow:hidden; width:100vw; height:100vh; }
+.top-bar { position:fixed;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#00ff88,#ffd966,#ff00ff,#00ff88);background-size:300% auto;animation:flow 2s linear infinite;z-index:9998; }
+@keyframes flow{0%{background-position:0%}100%{background-position:300%}}
+
+#robot { position:fixed;top:50%;left:8px;z-index:9999;display:flex;align-items:center;cursor:grab;user-select:none; }
+#robot img,.robot-emoji-fallback { width:55px;height:55px;pointer-events:none;filter:drop-shadow(0 0 10px #00ff88);animation:hoverRobot 3s ease-in-out infinite; }
+.robot-emoji-fallback{display:flex;align-items:center;justify-content:center;font-size:36px;}
+@keyframes hoverRobot{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+#robot-info{background:rgba(0,15,30,0.92);border:1.5px solid #00ff88;border-radius:10px;padding:7px 10px;margin-left:8px;min-width:150px;max-width:calc(100vw - 80px);backdrop-filter:blur(10px);cursor:pointer;}
+#robot-info h3{color:#00ff88;font-size:12px;margin-bottom:2px;display:flex;align-items:center;gap:5px;}
+#robot-info p{color:#aaa;font-size:9px;margin:0;}
+.status-dot{display:inline-block;width:6px;height:6px;background:#00ff88;border-radius:50%;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+.ctrl-btns{position:absolute;top:-36px;right:0;display:flex;gap:5px;}
+.ctrl-btn{background:#1a1a2e;border:1.5px solid #ffd966;width:28px;height:28px;border-radius:50%;cursor:pointer;color:#ffd966;font-size:13px;display:flex;align-items:center;justify-content:center;}
+.ctrl-btn.green{border-color:#00ff88;color:#00ff88;}
+
+/* OVERLAY */
+#pred-overlay {
+    position:fixed;top:8px;right:8px;width:178px;
+    background:rgba(0,5,15,0.97);
+    border:2px solid #00ff88;border-radius:12px;
+    padding:9px;z-index:99999;
+    backdrop-filter:blur(15px);
+    box-shadow:0 0 25px rgba(0,255,136,0.25);
+    font-family:monospace;color:#fff;cursor:grab;user-select:none;
+}
+.ov-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(0,255,136,0.25);padding-bottom:6px;margin-bottom:7px;}
+.ov-title{color:#00ff88;font-size:11px;font-weight:bold;}
+.ov-phien{color:#ffd966;font-size:9px;margin-top:1px;}
+.close-btn{background:rgba(255,50,50,0.85);border:none;color:#fff;border-radius:50%;width:20px;height:20px;font-size:13px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+.ratio-row{display:flex;gap:4px;margin-bottom:7px;}
+.ratio-tai{flex:1;text-align:center;padding:2px 0;border-radius:4px;background:rgba(0,255,136,0.12);border:1px solid #00ff88;color:#00ff88;font-size:9px;font-weight:bold;}
+.ratio-xiu{flex:1;text-align:center;padding:2px 0;border-radius:4px;background:rgba(255,80,80,0.12);border:1px solid #ff4444;color:#ff4444;font-size:9px;font-weight:bold;}
+
+/* CARD PHIÊN HIỆN TẠI */
+#card-now {
+    border-radius:9px;padding:8px 7px;text-align:center;
+    margin-bottom:6px;border:3px solid #00ff88;
+    animation:cardBlinkGreen 0.7s ease-in-out infinite;
+}
+@keyframes cardBlinkGreen{0%,100%{background:rgba(0,255,136,0.18);box-shadow:0 0 20px rgba(0,255,136,0.7);}50%{background:rgba(0,255,136,0.03);box-shadow:0 0 4px rgba(0,255,136,0.1);}}
+@keyframes cardBlinkRed{0%,100%{background:rgba(255,68,68,0.2);box-shadow:0 0 20px rgba(255,68,68,0.7);}50%{background:rgba(255,68,68,0.03);box-shadow:0 0 4px rgba(255,68,68,0.1);}}
+
+/* CARD PHIÊN TIẾP THEO */
+#card-next {
+    border-radius:9px;padding:8px 7px;text-align:center;
+    margin-bottom:6px;border:2px solid #007744;
+    animation:cardBlinkNextG 1.4s ease-in-out infinite;
+}
+@keyframes cardBlinkNextG{0%,100%{background:rgba(0,180,80,0.1);box-shadow:0 0 8px rgba(0,180,80,0.3);}50%{background:rgba(0,180,80,0.02);box-shadow:none;}}
+@keyframes cardBlinkNextR{0%,100%{background:rgba(200,40,40,0.1);box-shadow:0 0 8px rgba(200,40,40,0.3);}50%{background:rgba(200,40,40,0.02);box-shadow:none;}}
+
+.card-tag{font-size:8px;color:#ccc;margin-bottom:5px;letter-spacing:0.5px;font-weight:bold;}
+.card-val{font-size:36px;font-weight:900;letter-spacing:2px;line-height:1;}
+
+/* Layers indicator */
+.layers-row{font-size:7px;color:#555;margin-top:3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+
+.conf-bar-wrap{display:flex;align-items:center;gap:4px;margin-top:5px;}
+.conf-bar-bg{flex:1;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;}
+.conf-bar-fill{height:100%;border-radius:3px;transition:width 0.4s;}
+.conf-num{font-size:10px;font-weight:bold;min-width:28px;}
+
+.bet-box{border-radius:6px;padding:6px;text-align:center;margin-bottom:7px;}
+.bet-main{font-size:12px;font-weight:bold;}
+.bet-sub{font-size:8px;color:#aaa;margin-top:1px;}
+
+.divider{border:none;border-top:1px solid rgba(0,255,136,0.12);margin:5px 0;}
+.acc-row{text-align:center;}
+.acc-label{font-size:8px;color:#555;}
+.acc-val{font-size:13px;font-weight:bold;color:#ffd966;}
+
+/* algo badge */
+.algo-badge{font-size:7px;color:#444;text-align:center;margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="top-bar"></div>
+<iframe src="https://lc79b.bet" id="gameFrame"
+    style="position:fixed;inset:0;width:100%;height:100%;border:none;z-index:1;"
+    allow="autoplay;fullscreen;payment;clipboard-write" allowfullscreen referrerpolicy="no-referrer"></iframe>
+
+<div id="robot">
+    <img src="https://i.postimg.cc/rwkZQhxp/Robot.gif" alt="Robot"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span class="robot-emoji-fallback" style="display:none">🤖</span>
+    <div id="robot-info" onclick="toggleOverlay()">
+        <h3><span class="status-dot"></span> ROBOT HỒ QUỐC</h3>
+        <p id="robot-status">Đang kết nối...</p>
+        <p id="fetch-debug" style="font-size:8px;margin-top:2px;color:#ffd966;">⏳ Chờ API...</p>
+    </div>
+    <div class="ctrl-btns">
+        <button class="ctrl-btn green" id="analysisBtn">📊</button>
+        <button class="ctrl-btn" id="kellyBtn">💰</button>
+    </div>
+</div>
+
+<div id="pred-overlay">
+    <div class="ov-header">
+        <div>
+            <div class="ov-title">🤖 HỒ QUỐC AI v8</div>
+            <div class="ov-phien" id="ov-phien">Chờ dữ liệu...</div>
+        </div>
+        <button class="close-btn" onclick="toggleOverlay()">−</button>
+    </div>
+
+    <div class="ratio-row">
+        <div class="ratio-tai" id="ov-tai">TÀI 50%</div>
+        <div class="ratio-xiu" id="ov-xiu">XIU 50%</div>
+    </div>
+
+    <!-- PHIÊN HIỆN TẠI -->
+    <div id="card-now">
+        <div class="card-tag">⚡ PHIÊN NÀY — CƯỢC NGAY</div>
+        <div class="card-val" id="now-val" style="color:#00ff88">---</div>
+        <div class="layers-row" id="now-layers">phân tích...</div>
+        <div class="conf-bar-wrap">
+            <div class="conf-bar-bg"><div class="conf-bar-fill" id="now-bar" style="width:50%"></div></div>
+            <span class="conf-num" id="now-conf">50%</span>
+        </div>
+    </div>
+
+    <div class="bet-box" id="bet-now" style="border:1px solid #444;background:rgba(100,100,100,0.08);">
+        <div class="bet-main" id="bet-now-label">⏳ Đang tính...</div>
+        <div class="bet-sub"  id="bet-now-sub"></div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- PHIÊN TIẾP THEO -->
+    <div id="card-next">
+        <div class="card-tag">🔮 PHIÊN TIẾP THEO</div>
+        <div class="card-val" id="next-val" style="color:#aaa">---</div>
+        <div class="conf-bar-wrap">
+            <div class="conf-bar-bg"><div class="conf-bar-fill" id="next-bar" style="width:50%"></div></div>
+            <span class="conf-num" id="next-conf">50%</span>
+        </div>
+    </div>
+
+    <div class="algo-badge">20 TẦNG · QE·BAY·PF·WBL·JSD</div>
+
+    <hr class="divider">
+
+    <!-- ACCURACY + STREAK -->
+    <div style="display:flex;gap:4px;margin-bottom:6px;">
+        <div style="flex:1;background:rgba(255,215,0,0.1);border:1px solid #554400;border-radius:6px;padding:5px;text-align:center;">
+            <div style="font-size:7px;color:#666;">ACCURACY</div>
+            <div class="acc-val" id="acc-val" style="font-size:14px;font-weight:bold;color:#ffd966;">--%</div>
+            <div style="font-size:7px;color:#555;" id="acc-sub">0/0 phiên</div>
+        </div>
+        <div style="flex:1;background:rgba(0,255,136,0.07);border:1px solid #003322;border-radius:6px;padding:5px;text-align:center;">
+            <div style="font-size:7px;color:#666;">CHUỖI</div>
+            <div id="streak-val" style="font-size:14px;font-weight:bold;color:#00ff88;">--</div>
+            <div id="streak-label" style="font-size:7px;color:#555;">--</div>
+        </div>
+    </div>
+
+    <!-- LỊCH SỬ DỰ ĐOÁN -->
+    <div style="font-size:8px;color:#555;margin-bottom:3px;text-align:center;letter-spacing:0.5px;">— LỊCH SỬ DỰ ĐOÁN —</div>
+    <div id="history-log" style="max-height:110px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;">
+        <div style="font-size:8px;color:#444;text-align:center;padding:8px 0;">Chờ dữ liệu...</div>
+    </div>
+</div>
+
+<script>
+'use strict';
+const DB_KEY='taixiu_history_v8', SESSION_LOG_KEY='taixiu_sessions_v8', PRED_KEY='taixiu_predictions_v8';
+const API_URL='https://wtxmd52.tele68.com/v1/txmd5/lite-sessions?cp=R&cl=R&pf=web&at=3959701241b686f12e01bfe9c3a319b8';
+let lastPhienId=null, predictions=[], historyGears=[], lastPrediction=null;
+let overlayVisible=true;
+
+function loadPredictions(){
+    try{
+        const s=localStorage.getItem(PRED_KEY);
+        predictions=s?JSON.parse(s):[];
+        // Restore lastPrediction từ phiên cuối cùng đã lưu (nếu có)
+        // sẽ được overwrite bởi nowR ngay sau fetch đầu tiên
+    }catch(e){ predictions=[]; }
+}
+function savePredictions(){
+    try{
+        // Chỉ giữ 200 phiên gần nhất để tránh đầy localStorage
+        const trimmed=predictions.slice(-200);
+        localStorage.setItem(PRED_KEY,JSON.stringify(trimmed));
+    }catch(e){}
+}
+function clearPredictions(){
+    predictions=[];
+    lastPrediction=null;
+    localStorage.removeItem(PRED_KEY);
+}
+
+function toggleOverlay(){
+    overlayVisible=!overlayVisible;
+    document.getElementById('pred-overlay').style.display=overlayVisible?'block':'none';
+}
+
+function setupDrag(elId){
+    const el=document.getElementById(elId);if(!el)return;
+    let d=false,sx=0,sy=0;
+    if(elId==='robot')setTimeout(()=>{el.style.top=(innerHeight/2-el.offsetHeight/2)+'px';},100);
+    el.addEventListener('mousedown',e=>{if(e.target.tagName==='BUTTON')return;d=true;const r=el.getBoundingClientRect();sx=e.clientX-r.left;sy=e.clientY-r.top;e.preventDefault();});
+    el.addEventListener('touchstart',e=>{if(e.target.tagName==='BUTTON')return;d=true;const t=e.touches[0],r=el.getBoundingClientRect();sx=t.clientX-r.left;sy=t.clientY-r.top;},{passive:true});
+    document.addEventListener('mousemove',e=>{if(!d)return;el.style.left=(e.clientX-sx)+'px';el.style.top=(e.clientY-sy)+'px';el.style.right='auto';});
+    document.addEventListener('touchmove',e=>{if(!d)return;const t=e.touches[0];el.style.left=(t.clientX-sx)+'px';el.style.top=(t.clientY-sy)+'px';el.style.right='auto';},{passive:false});
+    document.addEventListener('mouseup',()=>{d=false;});
+    document.addEventListener('touchend',()=>{d=false;});
+}
+
+const logger={
+    data:[],
+    init(){try{this.data=JSON.parse(localStorage.getItem(DB_KEY))||[];}catch(e){this.data=[];}},
+    log(id,d1,d2,d3,result){
+        const sum=(+d1||0)+(+d2||0)+(+d3||0);
+        const isTai=sum>10||(sum===0&&String(result||'').toUpperCase().includes('TÀI'));
+        this.data.push({id,ts:Date.now(),d1:+d1||0,d2:+d2||0,d3:+d3||0,sum,actual:isTai?'TÀI':'XIU'});
+        localStorage.setItem(DB_KEY,JSON.stringify(this.data));
+    },
+    export(){var c='id,ts,d1,d2,d3,sum,actual\n';this.data.forEach(function(r){c+='"'+r.id+'",'+r.ts+','+r.d1+','+r.d2+','+r.d3+','+r.sum+','+r.actual+'\n';});return c;}
+};
+function calcStats(){const tai=logger.data.filter(r=>r.actual==='TÀI').length,tot=logger.data.length;if(!tot)return{total:0,tai:0,xiu:0,tai_pct:0,xiu_pct:0};return{total:tot,tai,xiu:tot-tai,tai_pct:tai/tot*100,xiu_pct:(tot-tai)/tot*100};}
+function saveJSON(d){try{const s=localStorage.getItem(SESSION_LOG_KEY);const a=s?JSON.parse(s):[];a.push(d);localStorage.setItem(SESSION_LOG_KEY,JSON.stringify(a));}catch(e){}}
+
+function openDashboard(){
+    if(!logger.data.length){alert('Chưa có dữ liệu');return;}
+    var st=calcStats();
+    var m=document.createElement('div');
+    m.style.cssText='position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.96);overflow-y:auto;padding:20px;color:#fff;font-family:monospace;';
+    m.innerHTML='<div style="max-width:500px;margin:0 auto">'
+        +'<div style="display:flex;justify-content:space-between;margin-bottom:14px;border-bottom:2px solid #00ff88;padding-bottom:8px">'
+        +'<h2 style="color:#00ff88;margin:0">📊 DASHBOARD v8</h2>'
+        +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:#ff4466;border:none;padding:6px 14px;cursor:pointer;border-radius:4px;color:#fff;font-weight:bold">CLOSE</button>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'
+        +'<div style="background:rgba(0,255,136,0.08);padding:12px;border-left:3px solid #00ff88;border-radius:4px">'
+        +'<div style="font-size:10px;color:#aaa">TOTAL</div>'
+        +'<div style="color:#00ff88;font-size:22px;font-weight:bold">'+st.total+'</div>'
+        +'</div>'
+        +'<div style="background:rgba(255,215,0,0.08);padding:12px;border-left:3px solid #ffd966;border-radius:4px">'
+        +'<div style="font-size:10px;color:#aaa">TÀI / XIU</div>'
+        +'<div style="color:#ffd966;font-size:13px;font-weight:bold">'+st.tai+' / '+st.xiu+'</div>'
+        +'<div style="color:#aaa;font-size:9px">'+st.tai_pct.toFixed(1)+'% / '+st.xiu_pct.toFixed(1)+'%</div>'
+        +'</div></div>'
+        +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+        +'<button onclick="(function(){var b=new Blob([logger.export()],{type:\'text/csv\'});var u=URL.createObjectURL(b);var a=document.createElement(\'a\');a.href=u;a.download=\'tx_v8_\'+Date.now()+\'.csv\';a.click();})()" style="background:#00ff88;border:none;padding:8px 14px;cursor:pointer;border-radius:4px;color:#000;font-weight:bold">📥 CSV</button>'
+        +'<button onclick="if(confirm(\'Xoá lịch sử dự đoán?\')){clearPredictions();this.closest(\'[style*=fixed]\').remove();alert(\'Đã xoá!\');}" style="background:#ff4444;border:none;padding:8px 14px;cursor:pointer;border-radius:4px;color:#fff;font-weight:bold">🗑️ Xoá lịch sử</button>'
+        +'</div></div>';
+    document.body.appendChild(m);
+}
+
+function setupKellyBtn(){
+    document.getElementById('kellyBtn').addEventListener('click',()=>{
+        if(logger.data.length<30){alert('Cần ít nhất 30 phiên');return;}
+        const st=calcStats(),p=st.total>0?st.tai/st.total:0.5,k=Math.max(2*p-1,0);
+        alert('Kelly:\nWin Rate: '+(p*100).toFixed(2)+'%\nKelly f*: '+k.toFixed(4)+'\n¼K: '+(k*.25*100).toFixed(2)+'%');
+    });
+}
+
+/* ================================================================
+   ALGO ENGINE v8 — 20 TẦNG
+   ================================================================ */
+function algo20(h) {
+    if (!h || h.length < 20) return { pred:-1, rate:0, firedNames:[] };
+
+    // ── TẦNG 1-15 (cũ, giữ nguyên) ──
+    let mp=-1,sp=-1,pp=-1,fp=-1,ep=-1,ac=-1,vp=-1,ma=-1,rp=-1,kp=-1,cp=-1,hp=-1,gp=-1,rcp=-1,cop=-1;
+
+    // L1 MARKOV
+    const tr={'0to0':0,'0to1':0,'1to0':0,'1to1':0};
+    for(let i=0;i<h.length-1;i++){const k=h[i]+'to'+h[i+1];if(tr[k]!==undefined)tr[k]++;}
+    const p01=tr['0to1']/(tr['0to0']+tr['0to1']||1),p10=tr['1to0']/(tr['1to1']+tr['1to0']||1);
+    if(h[0]===0&&p01>0.6)mp=1;else if(h[0]===1&&p10>0.6)mp=0;else if(h[0]===0&&p01<0.4)mp=0;else if(h[0]===1&&p10<0.4)mp=1;
+
+    // L2 STREAK
+    let stk=1;for(let i=0;i<h.length-1;i++){if(h[i]===h[i+1])stk++;else break;}
+    if(stk>=4)sp=h[0];else if(stk===1)sp=h[0]===1?0:1;
+
+    // L3 PATTERN
+    if(h.length>=16){const pat=h.slice(0,4);let m=0;for(let i=4;i<h.length-3;i+=4){const sg=h.slice(i,i+4);if(sg[0]===pat[0]&&sg[1]===pat[1]&&sg[2]===pat[2]&&sg[3]===pat[3])m++;}if(m>=2)pp=pat[0];}
+
+    // L4 FREQUENCY
+    if(h.length>=25){const sg=h.slice(0,25),tC=sg.filter(x=>x===1).length,xC=25-tC;if(tC>=18)fp=0;else if(xC>=18)fp=1;else if(tC>=15)fp=0;else if(xC>=15)fp=1;}
+
+    // L5 ENTROPY
+    let es=0;for(let i=0;i<h.length-1;i++){if(h[i]!==h[i+1])es++;}
+    const er=es/(h.length-1);ep=er<0.4?h[0]:(er>0.6?(h[0]===1?0:1):-1);
+
+    // L6 AUTOCORR
+    if(h.length>=10){let c=0;const mn=h.slice(0,10).reduce((a,b)=>a+b)/10;for(let i=0;i<7;i++)c+=(h[i]-mn)*(h[i+3]-mn);if(Math.abs(c)>1.5)ac=c>0?h[0]:(h[0]===1?0:1);}
+
+    // L7 VOLATILITY
+    if(h.length>=20){const pr=h.slice(0,20),mn=pr.reduce((a,b)=>a+b)/20,v=pr.reduce((a,b)=>a+(b-mn)*(b-mn),0)/20,sd=Math.sqrt(v);if(pr[0]>mn+sd)vp=0;else if(pr[0]<mn-sd)vp=1;}
+
+    // L8 MA CROSSOVER
+    if(h.length>=15){const m5=h.slice(0,5).reduce((a,b)=>a+b)/5,m10=h.slice(0,10).reduce((a,b)=>a+b)/10;if(m5>m10+0.15)ma=1;else if(m5<m10-0.15)ma=0;}
+
+    // L9 RUNS TEST
+    if(h.length>=15){let r=1;for(let i=0;i<h.length-1;i++){if(h[i]!==h[i+1])r++;}const er2=2*h.length*0.5*0.5/(h.length-1);if(r<er2*0.6)rp=h[0];else if(r>er2*1.4)rp=h[0]===1?0:1;}
+
+    // L10 KELLY
+    if(h.length>=40){const w=h.slice(0,40).filter(x=>x===1).length,p=w/40,k=2*p-1;if(Math.abs(k)>0.15)kp=k>0?1:0;}
+
+    // L11 CHI2
+    if(h.length>=30){const ob=[h.slice(0,30).filter(x=>x===0).length,h.slice(0,30).filter(x=>x===1).length];let chi=0;for(let i=0;i<2;i++)chi+=Math.pow(ob[i]-15,2)/15;if(chi>5)cp=ob[1]>15?1:0;}
+
+    // L12 HURST
+    if(h.length>=25){const h1=h.slice(0,Math.floor(h.length/2)),h2=h.slice(Math.floor(h.length/2));const m1=h1.reduce((a,b)=>a+b)/h1.length,m2=h2.reduce((a,b)=>a+b)/h2.length;if(Math.abs(m2-m1)>0.2)hp=m2>m1?1:0;}
+
+    // L13 GARCH
+    if(h.length>=20){const ret=[];for(let i=1;i<Math.min(20,h.length);i++)ret.push(h[i]-h[i-1]);const vr=ret.reduce((a,b)=>a+b*b,0)/ret.length,lv=Math.abs(ret[ret.length-1]);if(lv>Math.sqrt(vr)*1.8)gp=h[0]===1?0:1;}
+
+    // L14 RECURRENCE
+    if(h.length>=10){let rc=0;for(let i=0;i<7;i++){if(h[i]===h[i+3])rc++;}if(rc>=5)rcp=h[0];}
+
+    // L15 COPULA
+    if(h.length>=15){let co=0,di=0;for(let i=0;i<10;i++){for(let j=i+1;j<10;j++){if((h[i]===1&&h[j]===1)||(h[i]===0&&h[j]===0))co++;else di++;}}const tau=(co-di)/(co+di||1);if(Math.abs(tau)>0.35)cop=tau>0?h[0]:(h[0]===1?0:1);}
+
+    // ── TẦNG 16-20 MỚI ──
+
+    // L16 QUANTUM ENSEMBLE v8
+    // Mô phỏng superposition: chạy nhiều window size khác nhau,
+    // mỗi window cho 1 "quantum state", collapse bằng majority vote có trọng số
+    let qePred = -1;
+    if (h.length >= 20) {
+        const windows = [5, 8, 12, 16, 20];
+        let qTai = 0, qXiu = 0;
+        for (const w of windows) {
+            if (h.length < w) continue;
+            const seg = h.slice(0, w);
+            const tRate = seg.filter(x=>x===1).length / w;
+            // Amplitude bình phương ~ xác suất (quantum Born rule)
+            const ampTai = tRate * tRate;
+            const ampXiu = (1-tRate)*(1-tRate);
+            // Trọng số theo window size (window lớn hơn = tin cậy hơn)
+            const wt = w / 20;
+            qTai += ampTai * wt;
+            qXiu += ampXiu * wt;
+        }
+        // Interference: thêm cross-correlation giữa các window
+        const shortMA = h.slice(0,5).reduce((a,b)=>a+b,0)/5;
+        const longMA  = h.slice(0,20).reduce((a,b)=>a+b,0)/20;
+        const interference = shortMA - longMA; // dương = bias TAI, âm = bias XIU
+        qTai += interference * 0.3;
+        qXiu -= interference * 0.3;
+        if (Math.abs(qTai - qXiu) > 0.05) qePred = qTai > qXiu ? 1 : 0;
+    }
+
+    // L17 BAYESIAN META-LEARNER
+    // Prior từ tổng thể, likelihood từ chuỗi gần nhất, posterior theo Bayes
+    let bayPred = -1;
+    if (h.length >= 25) {
+        // Prior: tỉ lệ TAI trong 50 phiên gần
+        const nPrior = Math.min(50, h.length);
+        const priorTai = h.slice(0, nPrior).filter(x=>x===1).length / nPrior;
+        // Likelihood: xác suất quan sát 5 phiên gần nhất nếu TAI là đúng
+        const recent5 = h.slice(0, 5);
+        const recentTaiCount = recent5.filter(x=>x===1).length;
+        // P(evidence|TAI) ~ binomial(k=recentTai, n=5, p=0.55)
+        // P(evidence|XIU) ~ binomial(k=recentTai, n=5, p=0.45)
+        const binom = (n,k,p)=>{ let r=1;for(let i=0;i<k;i++)r*=(n-i)/(i+1)*p;r*=Math.pow(1-p,n-k);return Math.max(r,1e-10); };
+        const likelTai = binom(5, recentTaiCount, 0.55);
+        const likelXiu = binom(5, recentTaiCount, 0.45);
+        // Posterior
+        const postTai = priorTai * likelTai;
+        const postXiu = (1-priorTai) * likelXiu;
+        const postSum = postTai + postXiu;
+        const pTai = postTai / postSum;
+        if (pTai > 0.58) bayPred = 1;
+        else if (pTai < 0.42) bayPred = 0;
+    }
+
+    // L18 PATTERN FINGERPRINT
+    // Hash chuỗi 6 phiên gần nhất → tìm trong lịch sử chuỗi nào xuất hiện sau hash đó
+    let pfPred = -1;
+    if (h.length >= 20) {
+        const FLEN = 6; // fingerprint length
+        const fingerprint = h.slice(0, FLEN).join('');
+        const outcomes = { tai: 0, xiu: 0 };
+        // h[0] = mới nhất. Tìm từ FLEN trở đi: nếu h[i..i+FLEN-1] khớp fingerprint
+        // thì h[i-1] là phiên xảy ra ngay SAU pattern đó (index nhỏ hơn = mới hơn)
+        for (let i = FLEN; i < h.length - 1; i++) {
+            const seg = h.slice(i, i + FLEN).join('');
+            if (seg === fingerprint) {
+                if (h[i-1] === 1) outcomes.tai++;
+                else outcomes.xiu++;
+            }
+        }
+        const total = outcomes.tai + outcomes.xiu;
+        if (total >= 2) {
+            const taiRate = outcomes.tai / total;
+            if (taiRate >= 0.65) pfPred = 1;
+            else if (taiRate <= 0.35) pfPred = 0;
+        }
+    }
+
+    // L19 WEIBULL SURVIVAL ANALYSIS
+    // Phân tích thời gian sống: bao lâu trước khi chuỗi đổi chiều?
+    // Estimate Weibull shape/scale từ run lengths, dự đoán xác suất đổi chiều
+    let wblPred = -1;
+    if (h.length >= 20) {
+        // h[0] = mới nhất → duyệt từ 0 để lấy run hiện tại đúng
+        const runs = [];
+        let runLen = 1, runVal = h[0];
+        for (let i = 1; i < h.length; i++) {
+            if (h[i] === runVal) { runLen++; }
+            else { runs.push({ len: runLen, val: runVal }); runLen = 1; runVal = h[i]; }
+        }
+        runs.push({ len: runLen, val: runVal });
+        if (runs.length >= 3) {
+            const avgRunLen = runs.slice(1).reduce((a,r)=>a+r.len,0) / (runs.length-1); // bỏ run hiện tại khi tính avg
+            const currentRunLen = runs[0].len; // run đang chạy (mới nhất)
+            const lambda = Math.max(avgRunLen, 1);
+            const k = 1.5;
+            const pSurvive = Math.exp(-Math.pow(currentRunLen/lambda, k));
+            if (pSurvive < 0.3) wblPred = runs[0].val === 1 ? 0 : 1;
+            else if (pSurvive > 0.7) wblPred = runs[0].val;
+        }
+    }
+
+    // L20 JSD UNCERTAINTY (Jensen-Shannon Divergence)
+    // So sánh phân phối nửa đầu vs nửa sau history
+    // JSD thấp = ổn định → predict theo trend | JSD cao = bất ổn → predict đảo chiều
+    let jsdPred = -1;
+    if (h.length >= 30) {
+        const mid = Math.floor(h.length / 2);
+        const h1 = h.slice(0, mid), h2 = h.slice(mid);
+        const p1 = [h1.filter(x=>x===0).length/h1.length, h1.filter(x=>x===1).length/h1.length];
+        const p2 = [h2.filter(x=>x===0).length/h2.length, h2.filter(x=>x===1).length/h2.length];
+        const m  = [0.5*(p1[0]+p2[0]), 0.5*(p1[1]+p2[1])];
+        const kl = (p,q)=>p.reduce((s,pi,i)=>pi>0&&q[i]>0?s+pi*Math.log(pi/q[i]):s, 0);
+        const jsd = 0.5*kl(p1,m) + 0.5*kl(p2,m);
+        // h1 = gần nhất, h2 = cũ hơn
+        const recentTrend = h1.filter(x=>x===1).length/h1.length > 0.5 ? 1 : 0;
+        const oldTrend    = h2.filter(x=>x===1).length/h2.length > 0.5 ? 1 : 0;
+        if (jsd < 0.02) {
+            // Phân phối ổn định → follow recent trend
+            jsdPred = recentTrend;
+        } else if (jsd > 0.08) {
+            // Phân phối thay đổi → theo trend gần (đang shift)
+            // Không đảo vì shift có thể tiếp tục
+            jsdPred = recentTrend !== oldTrend ? recentTrend : -1;
+        }
+    }
+
+    // ── WEIGHTED VOTING ENGINE ──
+    const votes = [
+        {pred:mp,  w:1.8, name:'MKV'},
+        {pred:sp,  w:1.7, name:'STK'},
+        {pred:pp,  w:1.6, name:'PAT'},
+        {pred:fp,  w:1.7, name:'FRQ'},
+        {pred:ep,  w:1.2, name:'ENT'},
+        {pred:ac,  w:1.3, name:'ACR'},
+        {pred:vp,  w:1.2, name:'VOL'},
+        {pred:ma,  w:1.0, name:'MA'},
+        {pred:rp,  w:1.1, name:'RUN'},
+        {pred:kp,  w:1.4, name:'KLY'},
+        {pred:cp,  w:1.3, name:'CHI'},
+        {pred:hp,  w:1.2, name:'HRT'},
+        {pred:gp,  w:1.1, name:'GCH'},
+        {pred:rcp, w:1.0, name:'REC'},
+        {pred:cop, w:1.2, name:'COP'},
+        // Tầng mới — trọng số cao hơn vì phức tạp hơn
+        {pred:qePred,  w:2.0, name:'QE'},
+        {pred:bayPred, w:1.9, name:'BAY'},
+        {pred:pfPred,  w:1.8, name:'PF'},
+        {pred:wblPred, w:1.7, name:'WBL'},
+        {pred:jsdPred, w:1.6, name:'JSD'},
+    ];
+
+    let taiScore=0, xiuScore=0, firedNames=[];
+    for (const v of votes) {
+        if (v.pred === -1) continue;
+        firedNames.push(v.name);
+        if (v.pred === 1) taiScore += v.w;
+        else xiuScore += v.w;
+    }
+    if (firedNames.length < 3) return { pred:-1, rate:0, firedNames };
+
+    const tot = taiScore + xiuScore;
+    const finalPred = taiScore > xiuScore ? 1 : 0;
+    const conf = Math.round(Math.max(taiScore, xiuScore) / tot * 100);
+
+    // Meta-correction: nếu JSD uncertainty cao + QE và BAY đồng thuận → boost confidence
+    const newLayersAgree = [qePred, bayPred, wblPred].filter(x=>x!==finalPred&&x!==-1).length;
+    const correctedConf = newLayersAgree >= 2
+        ? Math.min(conf - 5, 97)   // new layers disagree → reduce
+        : Math.min(conf + 3, 97);  // new layers agree → boost
+
+    return {
+        pred: finalPred,
+        rate: Math.min(Math.max(correctedConf, 51), 97),
+        firedNames
+    };
+}
+
+function calcPred(h, taiPct) {
+    const a = algo20(h);
+    if (a.pred === -1) {
+        return {
+            prediction: taiPct >= 50 ? 'TÀI' : 'XIU',
+            confidence: Math.max(taiPct, 100-taiPct),
+            layers: a.firedNames
+        };
+    }
+    const pred = a.pred === 1 ? 'TÀI' : 'XIU';
+    const bias = pred === 'TÀI' ? taiPct : (100-taiPct);
+    // Blend: 65% algo + 35% history (giảm bias history để tránh luôn ra TÀI)
+    // Nếu bias < 40% (history mạnh ngược chiều algo) → giảm confidence
+    const histPenalty = bias < 40 ? (40 - bias) * 0.5 : 0;
+    const conf = Math.min(Math.max(Math.round(a.rate*0.65 + bias*0.35 - histPenalty), 50), 97);
+    return { prediction: pred, confidence: conf, layers: a.firedNames };
+}
+
+/* UPDATE UI */
+function updateCard(cardId, valId, barId, confId, layersId, pred, conf, isNow) {
+    const color = pred==='TÀI' ? '#00ff88' : '#ff4444';
+    const card = document.getElementById(cardId);
+    // Force animation restart
+    card.style.animation = 'none';
+    void card.offsetWidth;
+    if (isNow) {
+        card.style.animation = pred==='TÀI'
+            ? 'cardBlinkGreen 0.7s ease-in-out infinite'
+            : 'cardBlinkRed 0.7s ease-in-out infinite';
+        card.style.borderColor = color;
+        card.style.borderWidth = '3px';
+    } else {
+        card.style.animation = pred==='TÀI'
+            ? 'cardBlinkNextG 1.4s ease-in-out infinite'
+            : 'cardBlinkNextR 1.4s ease-in-out infinite';
+        card.style.borderColor = pred==='TÀI' ? '#007744' : '#882222';
+        card.style.borderWidth = '2px';
+    }
+    document.getElementById(valId).textContent = pred;
+    document.getElementById(valId).style.color = color;
+    if (layersId) {
+        const el = document.getElementById(layersId);
+        if (el) el.textContent = ''; // cleared, shown in badge
+    }
+    document.getElementById(barId).style.width = conf+'%';
+    document.getElementById(barId).style.background = 'linear-gradient(90deg,'+color+',#00ddff)';
+    document.getElementById(confId).textContent = conf+'%';
+    document.getElementById(confId).style.color = color;
+}
+
+function updateBetBox(pred, conf) {
+    const box=document.getElementById('bet-now');
+    const lbl=document.getElementById('bet-now-label');
+    const sub=document.getElementById('bet-now-sub');
+    const isTai=pred==='TÀI';
+    const color=isTai?'#00ff88':'#ff4444';
+    const bgColor=isTai?'rgba(0,255,136,0.15)':'rgba(255,68,68,0.15)';
+    const borderColor=isTai?'#00ff88':'#ff4444';
+
+    if (conf >= 85) {
+        // Luôn hiện rõ TÀI hoặc XIU, màu theo prediction
+        box.style.cssText='border-radius:6px;padding:8px 6px;text-align:center;margin-bottom:7px;background:'+bgColor+';border:2px solid '+borderColor+';';
+        lbl.innerHTML='<span style="font-size:10px;color:#ffd966;">🎯 NÊN CƯỢC</span><br><span style="color:'+color+';font-size:22px;font-weight:900;letter-spacing:2px;">'+pred+'</span>';
+        sub.textContent='Tin cậy '+conf+'%';
+    } else if (conf >= 70) {
+        box.style.cssText='border-radius:6px;padding:8px 6px;text-align:center;margin-bottom:7px;background:'+bgColor+';border:1.5px dashed '+borderColor+';';
+        lbl.innerHTML='<span style="font-size:10px;color:#aaa;">⚡ CÂN NHẮC</span><br><span style="color:'+color+';font-size:20px;font-weight:900;">'+pred+'</span>';
+        sub.textContent='Tin cậy '+conf+'%';
+    } else {
+        box.style.cssText='border-radius:6px;padding:8px 6px;text-align:center;margin-bottom:7px;background:rgba(50,50,50,0.1);border:1px solid #333;';
+        lbl.innerHTML='<span style="font-size:10px;color:#555;">⏸️ BỎ QUA</span><br><span style="color:#555;font-size:16px;font-weight:bold;">'+pred+'</span>';
+        sub.textContent='Tin cậy chỉ '+conf+'%';
+    }
+}
+
+/* FETCH */
+function setupFetchLoop(){ fetchAndLog(); setInterval(fetchAndLog, 2000); }
+
+async function fetchAndLog(){
+    const dbg=document.getElementById('fetch-debug');
+    try{
+        const res=await Promise.race([
+            fetch(API_URL,{cache:'no-store'}),
+            new Promise((_,rj)=>setTimeout(()=>rj(new Error('Timeout')),5000))
+        ]);
+        if(dbg)dbg.textContent='⚠️ '+res.status;
+        if(!res.ok)return;
+        const data=await res.json();
+        if(!data?.list?.length)return;
+        const latest=data.list[0];
+        if(!latest?.id)return;
+        if(dbg)dbg.textContent='✅ #'+latest.id;
+
+        historyGears=data.list.slice(0,60).map(x=>{
+            const s=(x.dice1||0)+(x.dice2||0)+(x.dice3||0);
+            if(s===0&&x.resultTruyenThong)return x.resultTruyenThong==='TAI'?1:0;
+            return s>10?1:0;
+        });
+
+        if(latest.id!==lastPhienId){
+            lastPhienId=latest.id;
+            if(latest.dice1&&latest.dice2&&latest.dice3)
+                logger.log(latest.id,latest.dice1,latest.dice2,latest.dice3,latest.result||'');
+            buildAndDisplay(latest);
+        }
+    }catch(e){if(dbg)dbg.textContent='❌ '+(e.message||'blocked');}
+}
+
+function buildAndDisplay(latest){
+    try{
+        const h30=historyGears.slice(0,30);
+        const taiCnt=h30.filter(x=>x===1).length;
+        const taiPct=h30.length>0?Math.round(taiCnt/h30.length*100):50;
+        const xiuPct=100-taiPct;
+
+        // Kết quả thực phiên vừa xong
+        const d1=parseInt(latest.dice1)||0,d2=parseInt(latest.dice2)||0,d3=parseInt(latest.dice3)||0;
+        const sum=d1+d2+d3;
+        const result=String(latest.result||'').toUpperCase();
+        const isTai=sum>10||(sum===0&&(result.includes('TÀI')||result.includes('TAI')));
+        const actual=isTai?'TÀI':'XIU';
+
+        // So sánh prediction ta đã hiện kỳ trước với kết quả thực vừa về
+        if(lastPrediction!==null){
+            predictions.push({phienId:latest.id, predicted:lastPrediction, actual, correct:lastPrediction===actual});
+            savePredictions();
+        }
+
+        // PHIÊN HIỆN TẠI (đang chạy) — predict từ toàn bộ history đã có
+        const nowR = calcPred(historyGears, taiPct);
+        // Lưu lại để kỳ sau so sánh
+        lastPrediction = nowR.prediction;
+
+        // PHIÊN TIẾP THEO: dùng actual vừa về (chắc chắn hơn) thay vì prediction
+        const futH = [isTai?1:0, ...historyGears];
+        const nextR = calcPred(futH, taiPct);
+        const recent=predictions.slice(-20);
+        const acc=recent.length>0?(recent.filter(p=>p.correct).length/recent.length)*100:0;
+        const correctTotal=predictions.filter(p=>p.correct).length;
+
+        // Streak: đếm chuỗi đúng/sai liên tiếp gần nhất
+        let streakCount=0, streakType='';
+        for(let i=predictions.length-1;i>=0;i--){
+            if(i===predictions.length-1){ streakType=predictions[i].correct?'✅':'❌'; streakCount=1; }
+            else if((predictions[i].correct&&streakType==='✅')||(!predictions[i].correct&&streakType==='❌')) streakCount++;
+            else break;
+        }
+
+        // UI
+        document.getElementById('ov-phien').textContent='#'+latest.id;
+        document.getElementById('ov-tai').textContent='TÀI '+taiPct+'%';
+        document.getElementById('ov-xiu').textContent='XIU '+xiuPct+'%';
+
+        updateCard('card-now','now-val','now-bar','now-conf','now-layers', nowR.prediction, nowR.confidence, true);
+        updateBetBox(nowR.prediction, nowR.confidence);
+        updateCard('card-next','next-val','next-bar','next-conf',null, nextR.prediction, nextR.confidence, false);
+
+        document.getElementById('acc-val').textContent=acc.toFixed(1)+'%';
+        document.getElementById('acc-sub').textContent=correctTotal+'/'+predictions.length+' phiên';
+
+        // Streak
+        document.getElementById('streak-val').textContent=(streakCount>0?streakType+' '+streakCount:'--');
+        document.getElementById('streak-val').style.color=streakType==='✅'?'#00ff88':'#ff4444';
+        document.getElementById('streak-label').textContent=streakType==='✅'?'liên tiếp đúng':streakType==='❌'?'liên tiếp sai':'--';
+
+        // History log — hiện 8 phiên gần nhất, mới nhất trên cùng
+        const logEl=document.getElementById('history-log');
+        // Header
+        if(logEl){
+            const header='<div style="display:flex;justify-content:space-between;padding:2px 5px;font-size:7px;color:#444;border-bottom:1px solid #222;margin-bottom:2px;"><span style=\'min-width:38px\'>PHIÊN</span><span style=\'min-width:22px\'>DỰ</span><span>KQ</span><span style=\'min-width:22px;text-align:right\'>THỰC</span></div>';
+            const rows=predictions.slice(-20).reverse();
+            logEl.innerHTML=header+rows.map(function(p){
+                var bg=p.correct?'rgba(0,255,136,0.08)':'rgba(255,68,68,0.08)';
+                var border=p.correct?'rgba(0,255,136,0.25)':'rgba(255,68,68,0.25)';
+                var icon=p.correct?'\u2705':'\u274C';
+                var predColor=p.predicted==='TÀI'?'#00ff88':'#ff4444';
+                var actColor=p.actual==='TÀI'?'#00ff88':'#ff4444';
+                var pid=String(p.phienId||'').slice(-5);
+                var pLabel=p.predicted==='TÀI'?'T':'X';
+                var aLabel=p.actual==='TÀI'?'T':'X';
+                return '<div style="display:flex;align-items:center;justify-content:space-between;background:'+bg+';border:1px solid '+border+';border-radius:4px;padding:2px 5px;font-size:9px;">'
+                    +'<span style="color:#555;min-width:38px">#'+pid+'</span>'
+                    +'<span style="color:'+predColor+';font-weight:bold;min-width:22px">'+pLabel+'</span>'
+                    +'<span style="font-size:10px">'+icon+'</span>'
+                    +'<span style="color:'+actColor+';font-weight:bold;min-width:22px;text-align:right">'+aLabel+'</span>'
+                    +'</div>';
+            }).join('');
+        }
+        const rs=document.getElementById('robot-status');
+        if(rs)rs.textContent='Hiện: '+nowR.prediction+'('+nowR.confidence+'%) → Kế: '+nextR.prediction+'('+nextR.confidence+'%)';
+
+        if(overlayVisible)document.getElementById('pred-overlay').style.display='block';
+
+        saveJSON({phienId:latest.id,ts:new Date().toISOString(),nowPred:nowR.prediction,nowConf:nowR.confidence,nextPred:nextR.prediction,nextConf:nextR.confidence,actual:actual,acc20:acc,layers:nowR.layers});
+    }catch(e){console.error('buildAndDisplay:',e);}
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+    setupDrag('robot');
+    setupDrag('pred-overlay');
+    logger.init();
+    loadPredictions();
+    document.getElementById('analysisBtn').addEventListener('click',openDashboard);
+    setupKellyBtn();
+    setupFetchLoop();
+});
+</script>
+</body>
+</html>
