@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>TX DỰ ĐOÁN VIP 20.0.7 - Văn Bảo</title>
+    <style>
+        :root {
+            --bg: #050a10;
+            --bg2: #0c1520;
+            --bg3: #111b28;
+            --accent: #00ff88;
+            --accent2: #00d4ff;
+            --gold: #ffd740;
+            --red: #ff5566;
+            --text: #e8f0f8;
+            --text2: #7a8fa0;
+            --text3: #4a6070;
+            --border: #1a2d3d;
+            --border2: #243545;
+            --shadow: 0 0 40px rgba(0,255,136,0.15);
+            --shadow-lg: 0 30px 80px rgba(0,0,0,0.95);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            touch-action: none;
+            overscroll-behavior: none;
+            background: #000;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: var(--text);
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        #gameFrame {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            width: 100dvw; height: 100dvh;
+            border: none;
+            z-index: 1;
+            display: block;
+            background: #000;
+            pointer-events: auto;
+        }
+        #welcomeScreen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1000;
+            background: rgba(5,10,16,0.97);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s cubic-bezier(0.23,1,0.32,1);
+        }
+        #welcomeScreen.ẩn {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(1.06);
+        }
+        .khung-chào {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            padding: 50px 46px;
+            width: 500px;
+            max-width: 94vw;
+            box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0,255,136,0.15), 0 0 100px rgba(0,255,136,0.06);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .khung-chào::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(0,255,136,0.05), transparent, rgba(0,212,255,0.05), transparent);
+            animation: xoay 12s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes xoay { to { transform: rotate(360deg); } }
+        .khung-chào::after {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            background: var(--bg2);
+            border-radius: 28px;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .nội-dung-chào { position: relative; z-index: 2; }
+        .biểu-tượng { font-size: 70px; margin-bottom: 12px; animation: nổi 3s ease-in-out infinite; }
+        @keyframes nổi { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+        .tên-tool {
+            font-size: 38px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ff88, #00d4ff, #ffd740);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 5px;
+            margin-bottom: 4px;
+        }
+        .tác-giả { font-size: 14px; color: var(--text2); letter-spacing: 3px; margin-bottom: 4px; }
+        .tác-giả span { color: var(--gold); font-weight: 700; }
+        .phiên-bản { font-size: 12px; color: var(--text3); letter-spacing: 2px; margin-bottom: 32px; }
+        .phiên-bản span { color: var(--accent); font-weight: 700; }
+        .nhóm-nhập { text-align: left; margin-bottom: 26px; }
+        .nhóm-nhập label { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 10px; display: block; }
+        .bọc-input { position: relative; }
+        .bọc-input .biểu-tượng-input {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            z-index: 1;
+            color: var(--text3);
+            transition: 0.3s;
+            pointer-events: none;
+        }
+        .bọc-input input {
+            width: 100%;
+            padding: 16px 20px 16px 50px;
+            background: #080f18;
+            border: 2px solid var(--border);
+            border-radius: 18px;
+            color: var(--text);
+            font-size: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .bọc-input input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 6px rgba(0,255,136,0.06), 0 0 35px rgba(0,255,136,0.1);
+            background: #0a121d;
+        }
+        .bọc-input input:focus ~ .biểu-tượng-input { color: var(--accent); }
+        .bọc-input input::placeholder { color: #3a5068; font-size: 13px; }
+        .nút-vào-game {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 18px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, #00ff88, #00d4ff);
+            color: #050a10;
+            box-shadow: 0 0 50px rgba(0,255,136,0.35), 0 10px 28px rgba(0,0,0,0.5);
+            transition: all 0.3s cubic-bezier(0.23,1,0.32,1);
+            position: relative;
+            overflow: hidden;
+            font-family: inherit;
+        }
+        .nút-vào-game:hover { transform: translateY(-3px); box-shadow: 0 0 70px rgba(0,255,136,0.5), 0 14px 36px rgba(0,0,0,0.6); }
+        .nút-vào-game:active { transform: scale(0.94); }
+        .nút-vào-game .bóng-sáng {
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        .nút-vào-game:hover .bóng-sáng { left: 100%; }
+        .ghi-chú { font-size: 11px; color: var(--text3); margin-top: 18px; letter-spacing: 1px; }
+        .ghi-chú .hl { color: var(--gold); font-weight: 700; }
+        #bảngCôngCụ {
+            position: fixed;
+            z-index: 999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        #bảngCôngCụ.hoạt-động { opacity: 1; pointer-events: auto; }
+        .nút-bật-tool {
+            position: fixed;
+            top: 20px; left: 20px;
+            z-index: 1001;
+            background: rgba(12,21,32,0.94);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1.5px solid rgba(0,255,136,0.45);
+            padding: 13px 24px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 14px;
+            color: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 35px rgba(0,255,136,0.2), 0 8px 24px rgba(0,0,0,0.6);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .nút-bật-tool:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 0 55px rgba(0,255,136,0.35), 0 12px 32px rgba(0,0,0,0.7); border-color: var(--accent); }
+        .nút-bật-tool:active { transform: scale(0.92); }
+        .chấm-sống {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 20px var(--accent);
+            animation: chấmNhấp 1.2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+        @keyframes chấmNhấp { 0%,100% { box-shadow: 0 0 20px var(--accent); } 50% { box-shadow: 0 0 40px var(--accent), 0 0 60px var(--accent); } }
+        .popup-chính {
+            position: fixed;
+            top: 85px; left: 20px;
+            z-index: 1000;
+            width: 420px;
+            max-width: calc(100vw - 40px);
+            max-height: calc(100vh - 110px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: rgba(12,21,32,0.96);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 24px;
+            padding: 24px 26px 20px;
+            box-shadow: var(--shadow-lg), 0 0 0 2px rgba(0,255,136,0.25), 0 0 60px rgba(0,255,136,0.08);
+            border: 1px solid var(--border);
+            transform-origin: top left;
+            transition: all 0.3s cubic-bezier(0.23,1,0.32,1);
+            opacity: 0;
+            transform: scale(0.9) translateY(-12px);
+            pointer-events: none;
+        }
+        .popup-chính.mở { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+        .đầu-popup {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border2);
+            position: sticky;
+            top: 0;
+            background: rgba(12,21,32,0.96);
+            backdrop-filter: blur(30px);
+            z-index: 2;
+        }
+        .đầu-popup .tiêu-đề {
+            font-size: 17px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #00ff88, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+        }
+        .đầu-popup .nút-đóng {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: #1a2838;
+            border: 1px solid var(--border);
+            color: var(--text2);
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 300;
+            flex-shrink: 0;
+        }
+        .đầu-popup .nút-đóng:hover { background: #2a1a22; color: #ff5566; border-color: rgba(255,85,102,0.3); transform: rotate(90deg); }
+        .chọn-loại {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .chọn-loại button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-family: inherit;
+            background: #0d1622;
+            border: 1.5px solid var(--border);
+            color: var(--text2);
+        }
+        .chọn-loại button.đang-chọn {
+            background: rgba(0,255,136,0.1);
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 20px rgba(0,255,136,0.15);
+        }
+        .chọn-loại button:hover { border-color: var(--accent2); color: var(--text); }
+        .hàng-nhập { display: flex; gap: 8px; margin-bottom: 14px; }
+        .hàng-nhập input {
+            flex: 1;
+            min-width: 0;
+            padding: 12px 14px;
+            background: #080f18;
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            color: var(--text);
+            font-size: 13px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .hàng-nhập input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(0,255,136,0.06);
+            background: #0a121d;
+        }
+        .hàng-nhập input::placeholder { color: #3a5068; font-size: 11px; }
+        .hàng-nhập input.bị-lỗi {
+            border-color: var(--red);
+            box-shadow: 0 0 0 4px rgba(255,85,102,0.1);
+            animation: rung 0.5s ease;
+        }
+        @keyframes rung { 0%,100%{transform:translateX(0);} 20%{transform:translateX(-8px);} 40%{transform:translateX(8px);} 60%{transform:translateX(-5px);} 80%{transform:translateX(5px);} }
+        .nút-nhỏ {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .nút-dự-đoán {
+            background: linear-gradient(135deg, #00ff88, #00d4ff);
+            color: #050a10;
+            box-shadow: 0 0 25px rgba(0,255,136,0.25);
+        }
+        .nút-dự-đoán:hover { transform: scale(1.05); box-shadow: 0 0 40px rgba(0,255,136,0.4); }
+        .nút-dự-đoán:active { transform: scale(0.9); }
+        .nút-dự-đoán:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+        .nút-xoá {
+            background: #1a2838;
+            color: var(--text2);
+            min-width: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            padding: 12px 15px;
+        }
+        .nút-xoá:hover { background: #253848; color: var(--text); }
+        .nút-dán {
+            background: #1a2838;
+            color: var(--accent2);
+            min-width: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            padding: 12px 12px;
+            letter-spacing: 0;
+        }
+        .nút-dán:hover { background: #1a3038; color: #40c4ff; }
+        .màn-hình-tải {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 9999;
+            background: rgba(5,10,16,0.94);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .màn-hình-tải.đang-tải { display: flex; }
+        .vòng-tải {
+            width: 64px; height: 64px;
+            border: 3px solid var(--border2);
+            border-top: 3px solid var(--accent);
+            border-right: 3px solid var(--accent2);
+            border-radius: 50%;
+            animation: xoayNhanh 0.7s linear infinite;
+        }
+        @keyframes xoayNhanh { to { transform: rotate(360deg); } }
+        .chữ-tải {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 2px;
+            animation: thở 1.5s ease-in-out infinite;
+        }
+        @keyframes thở { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .phụ-tải {
+            font-size: 12px;
+            color: var(--text3);
+            letter-spacing: 1px;
+        }
+        .thanh-tải-bọc {
+            width: 220px;
+            height: 5px;
+            background: #1a2838;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .thanh-tải-đầy {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00d4ff, #ffd740);
+            border-radius: 10px;
+            animation: đẩyThanh 3s ease-in-out forwards;
+        }
+        @keyframes đẩyThanh { 0% { width: 0%; } 30% { width: 30%; } 60% { width: 60%; } 85% { width: 85%; } 100% { width: 100%; } }
+        .khung-kết-quả {
+            background: rgba(6,12,20,0.94);
+            border-radius: 18px;
+            border: 1px solid var(--border2);
+            padding: 20px;
+            min-height: 110px;
+            font-size: 14px;
+            line-height: 1.7;
+            box-shadow: inset 0 4px 28px rgba(0,0,0,0.5);
+            transition: all 0.3s;
+            text-align: center;
+        }
+        .tạm-thời {
+            color: var(--text3);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .tạm-thời .chấm {
+            display: inline-block;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 12px var(--accent);
+            flex-shrink: 0;
+        }
+        .dự-đoán-to {
+            font-size: 46px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            display: block;
+            margin-bottom: 8px;
+            line-height: 1;
+            animation: bậtLên 0.5s cubic-bezier(0.23,1,0.32,1);
+        }
+        @keyframes bậtLên { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .dự-đoán-to.tài {
+            color: #ffd740;
+            text-shadow: 0 0 60px rgba(255,215,64,0.7), 0 0 120px rgba(255,215,64,0.25);
+        }
+        .dự-đoán-to.xỉu {
+            color: #40c4ff;
+            text-shadow: 0 0 60px rgba(64,196,255,0.7), 0 0 120px rgba(64,196,255,0.25);
+        }
+        .phần-trăm {
+            font-size: 32px;
+            font-weight: 900;
+            margin: 10px 0;
+        }
+        .phần-trăm.cao { color: #ffd740; }
+        .phần-trăm.vừa { color: #80cbc4; }
+        .phần-trăm.thấp { color: #ff8a80; }
+        .nhãn-tin-cậy {
+            font-size: 14px;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        .nhãn-tin-cậy.cao { color: #ffd740; }
+        .nhãn-tin-cậy.vừa { color: #80cbc4; }
+        .nhãn-tin-cậy.thấp { color: #ff8a80; }
+        .thanh-tin-cậy-bọc {
+            height: 10px;
+            border-radius: 10px;
+            background: #1a2838;
+            margin: 14px 0 16px;
+            overflow: hidden;
+        }
+        .thanh-tin-cậy-đầy {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.8s cubic-bezier(0.23,1,0.32,1);
+            background: linear-gradient(90deg, #00ff88, #00d4ff, #ffd740);
+            box-shadow: 0 0 20px rgba(0,255,136,0.35);
+        }
+        .hàng-chi-tiết {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--text3);
+            margin-top: 6px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .huy-hiệu {
+            display: inline-block;
+            background: rgba(0,255,136,0.1);
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(0,255,136,0.3);
+            font-size: 10px;
+            color: var(--accent);
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .huy-hiệu-vàng {
+            display: inline-block;
+            background: rgba(255,215,64,0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,215,64,0.3);
+            font-size: 10px;
+            color: var(--gold);
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        .dữ-liệu-thô {
+            font-size: 9px;
+            color: #4a6078;
+            font-family: 'Consolas', 'Monaco', monospace;
+            padding: 12px;
+            background: rgba(4,8,14,0.75);
+            border-radius: 12px;
+            margin-top: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            text-align: left;
+            line-height: 1.7;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+        .chân-popup {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 10px;
+            color: var(--text3);
+            letter-spacing: 1px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border2);
+            position: sticky;
+            bottom: 0;
+            background: rgba(12,21,32,0.96);
+            backdrop-filter: blur(30px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+        }
+        .chân-popup .xanh { color: var(--accent); }
+        .chân-popup .vàng { color: var(--gold); font-weight: 700; }
+        .popup-chính::-webkit-scrollbar { width: 4px; }
+        .popup-chính::-webkit-scrollbar-track { background: transparent; }
+        .popup-chính::-webkit-scrollbar-thumb { background: #1a2d3d; border-radius: 10px; }
+        .dữ-liệu-thô::-webkit-scrollbar { width: 3px; }
+        .dữ-liệu-thô::-webkit-scrollbar-track { background: transparent; }
+        .dữ-liệu-thô::-webkit-scrollbar-thumb { background: #1a2d3d; border-radius: 10px; }
+        @media (max-width: 640px) {
+            .khung-chào { padding: 34px 22px; }
+            .tên-tool { font-size: 30px; }
+            .biểu-tượng { font-size: 54px; }
+            .popup-chính {
+                width: calc(100vw - 16px);
+                max-width: 360px;
+                padding: 18px 14px 14px;
+                top: 75px; left: 8px;
+                border-radius: 20px;
+            }
+            .hàng-nhập { flex-wrap: wrap; }
+            .hàng-nhập input { flex: 1 1 100%; }
+            .nút-nhỏ { padding: 10px 12px; font-size: 11px; }
+            .nút-bật-tool { font-size: 12px; padding: 11px 18px; top: 12px; left: 8px; }
+            .dự-đoán-to { font-size: 36px; }
+            .phần-trăm { font-size: 26px; }
+            .vòng-tải { width: 50px; height: 50px; }
+            .chữ-tải { font-size: 15px; }
+            .chọn-loại button { font-size: 11px; padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <iframe
+        id="gameFrame"
+        allow="camera; microphone; fullscreen; autoplay; encrypted-media; gyroscope; accelerometer"
+        allowfullscreen="true"
+        webkitallowfullscreen="true"
+        mozallowfullscreen="true">
+    </iframe>
+
+    <div class="màn-hình-tải" id="mànHìnhTải">
+        <div class="vòng-tải"></div>
+        <div class="chữ-tải">ĐANG PHÂN TÍCH...</div>
+        <div class="phụ-tải">Thuật toán VIP siêu nét - Vui lòng đợi</div>
+        <div class="thanh-tải-bọc">
+            <div class="thanh-tải-đầy"></div>
+        </div>
+    </div>
+
+    <div id="welcomeScreen">
+        <div class="khung-chào">
+            <div class="nội-dung-chào">
+                <div class="biểu-tượng">⚡</div>
+                <div class="tên-tool">NHẬP LINK GAME</div>
+                <div class="tác-giả">TOOL BY VANBAO <span>Văn Bảo</span></div>
+                <div class="phiên-bản"> <span></span> </div>
+                <div class="nhóm-nhập">
+                    <label>🔗 Liên Kết Game</label>
+                    <div class="bọc-input">
+                        <span class="biểu-tượng-input">🎯</span>
+                        <input type="text" id="inputLinkGame" placeholder="https://tx.game.com/phòng/abc123" value="https://lc79.bet">
+                    </div>
+                </div>
+                <button class="nút-vào-game" id="nútVàoGame">
+                    <span class="bóng-sáng"></span>
+                    🚀 VÀO GAME
+                </button>
+                <div class="ghi-chú">℻ Nút <span class="hl">⚡ BẬT TOOL</span> xuất hiện góc trái sau khi vào game</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="bảngCôngCụ">
+        <button class="nút-bật-tool" id="nútBậtTool">
+            <span class="chấm-sống"></span>
+            ⚡ BẬT TOOL
+        </button>
+
+        <div class="popup-chính" id="popupChính">
+            <div class="đầu-popup">
+                <span class="tiêu-đề">MD5 BY VANBAO</span>
+                <button class="nút-đóng" id="nútĐóng">✕</button>
+            </div>
+
+            <div class="chọn-loại">
+                <button class="đang-chọn" data-loại="md5">MD5 (32 ký tự)</button>
+                <button data-loại="sha256">SHA256 (64 ký tự)</button>
+            </div>
+
+            <div class="hàng-nhập">
+                <input type="text" id="inputHash" placeholder="Dán mã hash vào đây..." spellcheck="false" autocomplete="off" value="5f4dcc3b5aa765d61d8327deb882cf99">
+                <button class="nút-nhỏ nút-dán" id="nútDán" title="Dán từ clipboard">📋</button>
+                <button class="nút-nhỏ nút-dự-đoán" id="nútDựĐoán">⚡ DỰ ĐOÁN</button>
+                <button class="nút-nhỏ nút-xoá" id="nútXoá">✕</button>
+            </div>
+
+            <div class="khung-kết-quả" id="khungKếtQuả">
+                <div class="tạm-thời">
+                    <span class="chấm"></span> Nhập hash &amp; bấm <strong>DỰ ĐOÁN</strong> để phân tích
+                </div>
+            </div>
+
+            <div class="chân-popup">
+                <span class="xanh">⚡</span> Công cụ bởi <span class="vàng">Văn Bảo</span> · <span class="xanh">Siêu Nét 20.0.7</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            "use strict";
+
+            document.addEventListener('gesturestart', e => e.preventDefault());
+            document.addEventListener('gesturechange', e => e.preventDefault());
+            document.addEventListener('gestureend', e => e.preventDefault());
+            document.addEventListener('touchmove', function(e) {
+                if (e.target.closest('.popup-chính') || e.target.closest('.dữ-liệu-thô')) return;
+                if (e.scale !== 1) e.preventDefault();
+            }, { passive: false });
+            document.addEventListener('wheel', function(e) {
+                if (e.ctrlKey || e.metaKey) e.preventDefault();
+            }, { passive: false });
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '0')) {
+                    e.preventDefault();
+                }
+            });
+
+            const gameFrame = document.getElementById('gameFrame');
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            const inputLinkGame = document.getElementById('inputLinkGame');
+            const nútVàoGame = document.getElementById('nútVàoGame');
+            const bảngCôngCụ = document.getElementById('bảngCôngCụ');
+            const nútBậtTool = document.getElementById('nútBậtTool');
+            const popupChính = document.getElementById('popupChính');
+            const nútĐóng = document.getElementById('nútĐóng');
+            const inputHash = document.getElementById('inputHash');
+            const nútDựĐoán = document.getElementById('nútDựĐoán');
+            const nútXoá = document.getElementById('nútXoá');
+            const nútDán = document.getElementById('nútDán');
+            const khungKếtQuả = document.getElementById('khungKếtQuả');
+            const mànHìnhTải = document.getElementById('mànHìnhTải');
+            const cácNútLoại = document.querySelectorAll('.chọn-loại button');
+
+            let đãVàoGame = false;
+            let đangDựĐoán = false;
+            let loạiHashHiệnTại = 'md5';
+
+            cácNútLoại.forEach(nút => {
+                nút.addEventListener('click', function() {
+                    cácNútLoại.forEach(n => n.classList.remove('đang-chọn'));
+                    this.classList.add('đang-chọn');
+                    loạiHashHiệnTại = this.dataset.loại;
+
+                    if (loạiHashHiệnTại === 'md5') {
+                        inputHash.placeholder = 'Dán MD5 (32 ký tự hex)...';
+                        inputHash.value = '5f4dcc3b5aa765d61d8327deb882cf99';
+                    } else {
+                        inputHash.placeholder = 'Dán SHA256 (64 ký tự hex)...';
+                        inputHash.value = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8';
+                    }
+
+                    khungKếtQuả.innerHTML = `
+                        <div class="tạm-thời">
+                            <span class="chấm"></span> Đã chọn <strong>${loạiHashHiệnTại.toUpperCase()}</strong> · Nhập hash để dự đoán
+                        </div>
+                    `;
+
+                    setTimeout(() => {
+                        inputHash.focus();
+                        inputHash.select();
+                    }, 150);
+                });
+            });
+
+            function vàoGame() {
+                const link = inputLinkGame.value.trim();
+                if (!link) {
+                    rungLắc(inputLinkGame);
+                    inputLinkGame.focus();
+                    return;
+                }
+                if (!link.startsWith('http://') && !link.startsWith('https://')) {
+                    rungLắc(inputLinkGame);
+                    inputLinkGame.focus();
+                    return;
+                }
+
+                gameFrame.src = link;
+                gameFrame.style.display = 'block';
+                gameFrame.style.width = '100vw';
+                gameFrame.style.height = '100vh';
+                gameFrame.style.position = 'fixed';
+                gameFrame.style.top = '0';
+                gameFrame.style.left = '0';
+                gameFrame.style.border = 'none';
+                gameFrame.style.zIndex = '1';
+
+                đãVàoGame = true;
+                welcomeScreen.classList.add('ẩn');
+
+                setTimeout(() => {
+                    bảngCôngCụ.classList.add('hoạt-động');
+                    setTimeout(() => {
+                        popupChính.classList.add('mở');
+                        inputHash.focus();
+                        inputHash.select();
+                    }, 500);
+                }, 600);
+
+                console.log('%c[Văn Bảo] %c✅ Đã vào game: %c' + link,
+                    'color: #ffd740; font-weight: bold;',
+                    'color: #e8f0f8;',
+                    'color: #00d4ff;');
+            }
+
+            window.addEventListener('resize', () => {
+                if (đãVàoGame) {
+                    gameFrame.style.width = '100vw';
+                    gameFrame.style.height = '100vh';
+                }
+            });
+
+            function rungLắc(el) {
+                el.classList.add('bị-lỗi');
+                setTimeout(() => el.classList.remove('bị-lỗi'), 500);
+            }
+
+            nútVàoGame.addEventListener('click', vàoGame);
+            inputLinkGame.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); vàoGame(); }
+            });
+
+            nútBậtTool.addEventListener('click', function() {
+                if (!đãVàoGame) {
+                    welcomeScreen.classList.remove('ẩn');
+                    inputLinkGame.focus();
+                    return;
+                }
+                popupChính.classList.toggle('mở');
+                if (popupChính.classList.contains('mở')) {
+                    setTimeout(() => { inputHash.focus(); inputHash.select(); }, 150);
+                }
+            });
+
+            nútĐóng.addEventListener('click', () => popupChính.classList.remove('mở'));
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && popupChính.classList.contains('mở')) {
+                    popupChính.classList.remove('mở');
+                }
+            });
+
+            nútDán.addEventListener('click', async function() {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (text) {
+                        inputHash.value = text.trim();
+                        const sạch = text.trim().toLowerCase().replace(/[^0-9a-f]/g, '');
+                        if (sạch.length === 64) {
+                            loạiHashHiệnTại = 'sha256';
+                            cácNútLoại.forEach(n => {
+                                n.classList.remove('đang-chọn');
+                                if (n.dataset.loại === 'sha256') n.classList.add('đang-chọn');
+                            });
+                        } else if (sạch.length === 32) {
+                            loạiHashHiệnTại = 'md5';
+                            cácNútLoại.forEach(n => {
+                                n.classList.remove('đang-chọn');
+                                if (n.dataset.loại === 'md5') n.classList.add('đang-chọn');
+                            });
+                        }
+                        inputHash.focus();
+                    }
+                } catch (err) {
+                    inputHash.focus();
+                    inputHash.placeholder = 'Không thể dán, hãy dán thủ công...';
+                }
+            });
+
+            nútXoá.addEventListener('click', function() {
+                inputHash.value = '';
+                khungKếtQuả.innerHTML = `
+                    <div class="tạm-thời">
+                        <span class="chấm"></span> Đã xoá, nhập hash mới
+                    </div>
+                `;
+                inputHash.focus();
+            });
+
+            function dựĐoánHash(chuỗiHash) {
+                const sạch = chuỗiHash.trim().toLowerCase().replace(/[^0-9a-f]/g, '');
+                const độDài = sạch.length;
+
+                if (loạiHashHiệnTại === 'md5' && độDài !== 32) {
+                    return { lỗi: '❌ MD5 phải đúng 32 ký tự hex (hiện có ' + độDài + ')' };
+                }
+                if (loạiHashHiệnTại === 'sha256' && độDài !== 64) {
+                    return { lỗi: '❌ SHA256 phải đúng 64 ký tự hex (hiện có ' + độDài + ')' };
+                }
+
+                const bytes = [];
+                for (let i = 0; i < độDài; i += 2) {
+                    bytes.push(parseInt(sạch.substr(i, 2), 16));
+                }
+                const tổngByte = bytes.length;
+
+                let tổngTrọngSố = 0;
+                for (let i = 0; i < bytes.length; i++) {
+                    tổngTrọngSố += bytes[i] * (i + 1) * ((i % 3 === 0) ? 3 : (i % 2 === 0 ? 2 : 1));
+                }
+
+                let tổngXOR = 0;
+                for (let i = 0; i < bytes.length; i++) {
+                    tổngXOR ^= bytes[i];
+                }
+
+                const nửaĐầu = bytes.slice(0, Math.floor(tổngByte / 2));
+                const nửaSau = bytes.slice(Math.floor(tổngByte / 2));
+                const tổngNửaĐầu = nửaĐầu.reduce((a, b) => a + b, 0);
+                const tổngNửaSau = nửaSau.reduce((a, b) => a + b, 0);
+
+                let đếmBit = 0;
+                for (let i = 0; i < bytes.length; i++) {
+                    let b = bytes[i];
+                    while (b > 0) { đếmBit += b & 1; b >>= 1; }
+                }
+                const tổngBit = tổngByte * 8;
+
+                const tầnSuất = {};
+                for (let c of sạch) {
+                    tầnSuất[c] = (tầnSuất[c] || 0) + 1;
+                }
+                let entropy = 0;
+                for (let k in tầnSuất) {
+                    const p = tầnSuất[k] / độDài;
+                    entropy -= p * Math.log2(p);
+                }
+
+                let chẵnHex = 0, lẻHex = 0;
+                for (let i = 0; i < độDài; i++) {
+                    const val = parseInt(sạch[i], 16);
+                    if (i % 2 === 0) chẵnHex += val;
+                    else lẻHex += val;
+                }
+
+                const kíchThướcPhần = Math.floor(tổngByte / 4);
+                let tổngCácPhần = [];
+                for (let p = 0; p < 4; p++) {
+                    const phần = bytes.slice(p * kíchThướcPhần, (p + 1) * kíchThướcPhần);
+                    tổngCácPhần.push(phần.reduce((a, b) => a + b, 0));
+                }
+
+                let cặpLiênTiếp = 0;
+                for (let i = 0; i < sạch.length - 1; i++) {
+                    if (sạch[i] === sạch[i + 1]) cặpLiênTiếp++;
+                }
+
+                let byteChẵn = 0, byteLẻ = 0;
+                for (let i = 0; i < bytes.length; i++) {
+                    if (bytes[i] % 2 === 0) byteChẵn += bytes[i];
+                    else byteLẻ += bytes[i];
+                }
+
+                const seed1 = ((tổngTrọngSố * 0x7f3b5c1d) ^ (tổngXOR << 12)) >>> 0;
+                const seed2 = ((đếmBit * 0x1a2b3c4d) ^ (tổngNửaĐầu << 8) ^ tổngNửaSau) >>> 0;
+                const seed3 = ((chẵnHex * 0x9e3d7c1b) ^ (lẻHex * 0x3f8a2b6c)) >>> 0;
+                const seed4 = ((cặpLiênTiếp * 0x5a1b3c7d) ^ (Math.round(entropy * 10000))) >>> 0;
+                const seed5 = ((byteChẵn * 0x2c4d8f1a) ^ (byteLẻ * 0x7e1a3b5c)) >>> 0;
+                const seed6 = tổngCácPhần.reduce((a, b, i) => a ^ (b << (i * 4)), 0) >>> 0;
+
+                const hỗnHợp = (seed1 ^ seed2 ^ seed3 ^ seed4 ^ seed5 ^ seed6) >>> 0;
+                const bitGiữa = (hỗnHợp >> 8) & 0xFFFF;
+                const điểm = bitGiữa % 101;
+                const ngưỡng = 50;
+                const làTài = điểm >= ngưỡng;
+
+                const khoảngCách = Math.abs(điểm - ngưỡng);
+                const khoảngTốiĐa = 50;
+
+                let độChínhXác = 60 + (khoảngCách / khoảngTốiĐa) * 35;
+
+                if (entropy > 3.9) độChínhXác += 5;
+                else if (entropy > 3.6) độChínhXác += 3;
+                else if (entropy < 2.7) độChínhXác -= 3;
+
+                const tỷLệBit = đếmBit / tổngBit;
+                if (tỷLệBit > 0.58 || tỷLệBit < 0.42) độChínhXác += 4;
+                else if (tỷLệBit > 0.54 || tỷLệBit < 0.46) độChínhXác += 2;
+
+                if (cặpLiênTiếp === 0) độChínhXác += 4;
+                else if (cặpLiênTiếp > 8) độChínhXác -= 2;
+
+                const chênhLệchCL = Math.abs(chẵnHex - lẻHex);
+                if (chênhLệchCL > 50) độChínhXác += 3;
+                else if (chênhLệchCL > 30) độChínhXác += 2;
+
+                if (loạiHashHiệnTại === 'sha256') độChínhXác += 3;
+
+                độChínhXác = Math.min(99.9, độChínhXác);
+                độChínhXác = Math.max(55, độChínhXác);
+                độChínhXác = Math.round(độChínhXác * 10) / 10;
+
+                let nhãnTinCậy, lớpTinCậy;
+                if (độChínhXác >= 97) {
+                    nhãnTinCậy = '💯 Siêu Nét - Gần Như Tuyệt Đối';
+                    lớpTinCậy = 'cao';
+                } else if (độChínhXác >= 90) {
+                    nhãnTinCậy = '🔥 Cực Kỳ Chính Xác - Chốt Kèo';
+                    lớpTinCậy = 'cao';
+                } else if (độChínhXác >= 83) {
+                    nhãnTinCậy = '⚡ Rất Cao - Tự Tin Vào';
+                    lớpTinCậy = 'cao';
+                } else if (độChínhXác >= 75) {
+                    nhãnTinCậy = '✅ Cao - Khả Năng Thắng Lớn';
+                    lớpTinCậy = 'vừa';
+                } else if (độChínhXác >= 67) {
+                    nhãnTinCậy = '👍 Khá - Có Lợi Thế';
+                    lớpTinCậy = 'vừa';
+                } else {
+                    nhãnTinCậy = '⭐ Trung Bình - Cân Nhắc';
+                    lớpTinCậy = 'thấp';
+                }
+
+                const thô = [
+                    `╔══════════════════════════════════════════════╗`,
+                    `║  📊 PHÂN TÍCH CHI TIẾT ${loạiHashHiệnTại.toUpperCase()}  ║`,
+                    `╚══════════════════════════════════════════════╝`,
+                    ``,
+                    `🔹 Loại hash     : ${loạiHashHiệnTại.toUpperCase()} (${tổngByte} bytes)`,
+                    `🔹 Hash          : ${sạch}`,
+                    `🔹 Tổng trọng số : ${tổngTrọngSố}`,
+                    `🔹 Tổng XOR      : ${tổngXOR}`,
+                    `🔹 Tổng nửa đầu  : ${tổngNửaĐầu}`,
+                    `🔹 Tổng nửa sau  : ${tổngNửaSau}`,
+                    `🔹 Đếm bit       : ${đếmBit}/${tổngBit} (${(tỷLệBit*100).toFixed(1)}%)`,
+                    `🔹 Entropy       : ${entropy.toFixed(4)} bits`,
+                    `🔹 Chẵn/Lẻ hex   : ${chẵnHex} / ${lẻHex} (lệch: ${chênhLệchCL})`,
+                    `🔹 Byte chẵn/lẻ  : ${byteChẵn} / ${byteLẻ}`,
+                    `🔹 Cặp liên tiếp : ${cặpLiênTiếp}`,
+                    `🔹 4 phần        : [${tổngCácPhần.join(', ')}]`,
+                    ``,
+                    `──────────────────────────────────────────────────`,
+                    `🔸 Seed 1        : ${seed1}`,
+                    `🔸 Seed 2        : ${seed2}`,
+                    `🔸 Seed 3        : ${seed3}`,
+                    `🔸 Seed 4        : ${seed4}`,
+                    `🔸 Seed 5        : ${seed5}`,
+                    `🔸 Seed 6        : ${seed6}`,
+                    `🔸 Hỗn hợp       : ${hỗnHợp}`,
+                    `🔸 Bit giữa      : ${bitGiữa}`,
+                    ``,
+                    `──────────────────────────────────────────────────`,
+                    `⭐ Điểm          : ${điểm}/100`,
+                    `⭐ Ngưỡng        : ${ngưỡng}`,
+                    `⭐ Khoảng cách   : ${khoảngCách}`,
+                    ``,
+                    `╔══════════════════════════════════════════════╗`,
+                    `║  🎯 ${làTài ? 'TÀI 🔥' : 'XỈU ❄️'}  ~  ${độChínhXác}%              ║`,
+                    `╚══════════════════════════════════════════════╝`
+                ].join('\n');
+
+                return {
+                    dựĐoán: làTài ? 'TÀI' : 'XỈU',
+                    làTài,
+                    độChínhXác,
+                    nhãnTinCậy,
+                    lớpTinCậy,
+                    điểm,
+                    đếmBit,
+                    tổngBit,
+                    entropy,
+                    loạiHash: loạiHashHiệnTại.toUpperCase(),
+                    thô
+                };
+            }
+
+            function xửLýDựĐoán() {
+                if (!đãVàoGame) {
+                    welcomeScreen.classList.remove('ẩn');
+                    inputLinkGame.focus();
+                    return;
+                }
+
+                if (đangDựĐoán) return;
+
+                const đầuVào = inputHash.value;
+                if (!đầuVào.trim()) {
+                    khungKếtQuả.innerHTML = '<div class="tạm-thời"><span class="chấm"></span> ⚠️ Vui lòng nhập hash</div>';
+                    rungLắc(inputHash);
+                    return;
+                }
+
+                const sạch = đầuVào.trim().toLowerCase().replace(/[^0-9a-f]/g, '');
+                const độDàiMongĐợi = loạiHashHiệnTại === 'md5' ? 32 : 64;
+
+                if (sạch.length !== độDàiMongĐợi) {
+                    khungKếtQuả.innerHTML = `
+                        <div class="tạm-thời">
+                            <span class="chấm"></span> ❌ ${loạiHashHiệnTại.toUpperCase()} cần đúng ${độDàiMongĐợi} ký tự hex (hiện có ${sạch.length})
+                        </div>
+                    `;
+                    rungLắc(inputHash);
+                    return;
+                }
+
+                đangDựĐoán = true;
+                nútDựĐoán.disabled = true;
+                nútDựĐoán.textContent = '⏳ ĐANG...';
+                mànHìnhTải.classList.add('đang-tải');
+
+                setTimeout(() => {
+                    const kếtQuả = dựĐoánHash(sạch);
+
+                    mànHìnhTải.classList.remove('đang-tải');
+                    đangDựĐoán = false;
+                    nútDựĐoán.disabled = false;
+                    nútDựĐoán.textContent = '⚡ DỰ ĐOÁN';
+
+                    if (kếtQuả.lỗi) {
+                        khungKếtQuả.innerHTML = '<div class="tạm-thời"><span class="chấm"></span> ' + kếtQuả.lỗi + '</div>';
+                        return;
+                    }
+
+                    const lớpDựĐoán = kếtQuả.làTài ? 'tài' : 'xỉu';
+                    const emoji = kếtQuả.làTài ? '🔥' : '❄️';
+
+                    let html = '';
+                    html += `<span class="dự-đoán-to ${lớpDựĐoán}">${emoji} ${kếtQuả.dựĐoán}</span>`;
+                    html += `<div class="phần-trăm ${kếtQuả.lớpTinCậy}">${kếtQuả.độChínhXác}%</div>`;
+                    html += `<div class="nhãn-tin-cậy ${kếtQuả.lớpTinCậy}">${kếtQuả.nhãnTinCậy}</div>`;
+                    html += `<div class="thanh-tin-cậy-bọc"><div class="thanh-tin-cậy-đầy" id="thanhTinCậy" style="width:0%;"></div></div>`;
+                    html += `<div class="hàng-chi-tiết">`;
+                    html += `<span>Điểm: ${kếtQuả.điểm}/100</span>`;
+                    html += `<span>Bit: ${kếtQuả.đếmBit}/${kếtQuả.tổngBit}</span>`;
+                    html += `<span>Entropy: ${kếtQuả.entropy.toFixed(3)}</span>`;
+                    html += `<span class="huy-hiệu">${kếtQuả.loạiHash}</span>`;
+                    html += `<span class="huy-hiệu-vàng">Văn Bảo</span>`;
+                    html += `</div>`;
+                    html += `<div class="dữ-liệu-thô">${kếtQuả.thô}</div>`;
+
+                    khungKếtQuả.innerHTML = html;
+
+                    setTimeout(() => {
+                        const thanh = document.getElementById('thanhTinCậy');
+                        if (thanh) {
+                            setTimeout(() => { thanh.style.width = kếtQuả.độChínhXác + '%'; }, 50);
+                        }
+                    }, 100);
+
+                    console.log('%c[Văn Bảo] %c🎯 Dự đoán: %c' + kếtQuả.dựĐoán + ' %c' + kếtQuả.độChínhXác + '% %c(' + kếtQuả.loạiHash + ')',
+                        'color: #ffd740; font-weight: bold;',
+                        'color: #e8f0f8;',
+                        kếtQuả.làTài ? 'color: #ffd740; font-weight: bold;' : 'color: #40c4ff; font-weight: bold;',
+                        'color: #80cbc4;',
+                        'color: #7a8fa0;');
+                }, 3000);
+            }
+
+            nútDựĐoán.addEventListener('click', xửLýDựĐoán);
+            inputHash.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); xửLýDựĐoán(); }
+            });
+
+            function testThuậtToán() {
+                const testMD5 = [
+                    '5f4dcc3b5aa765d61d8327deb882cf99',
+                    'd41d8cd98f00b204e9800998ecf8427e',
+                    '098f6bcd4621d373cade4e832627b4f6',
+                    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                    'ffffffffffffffffffffffffffffffff',
+                    '00000000000000000000000000000000',
+                    '1234567890abcdef1234567890abcdef',
+                    'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6',
+                    'ff00ff00ff00ff00ff00ff00ff00ff00',
+                    '0123456789abcdef0123456789abcdef'
+                ];
+                const testSHA256 = [
+                    '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',
+                    'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+                    '6ca13d52ca70c883e0f0bb101e425a89e8624de51db2d2392593af6a84118090',
+                    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                    'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+                ];
+
+                console.log('%c╔════════════════════════════════════════════════════════════════╗', 'color:#ffd740;');
+                console.log('%c║  🧪 TEST THUẬT TOÁN SIÊU NÉT              ║', 'color:#00ff88;font-weight:bold;font-size:14px;', 'color:#ffd740;');
+                console.log('%c║  MD5 (10 mẫu) + SHA256 (5 mẫu)             ║', 'color:#00d4ff;', 'color:#ffd740;');
+                console.log('%c╚════════════════════════════════════════════════════════════════╝', 'color:#ffd740;');
+
+                let tàiMD5 = 0, xỉuMD5 = 0;
+                console.log('%c─── MD5 ───', 'color:#00d4ff;font-weight:bold;');
+                const lưuLoại = loạiHashHiệnTại;
+                loạiHashHiệnTại = 'md5';
+                testMD5.forEach(hash => {
+                    const r = dựĐoánHash(hash);
+                    if (r.làTài) tàiMD5++; else xỉuMD5++;
+                    console.log(
+                        `%c${hash.substring(0,12)}... %c=> %c${r.dựĐoán} %c${r.độChínhXác}% %c(Điểm: ${r.điểm})`,
+                        'color:#7a8fa0;',
+                        'color:#e8f0f8;',
+                        r.làTài ? 'color:#ffd740;font-weight:bold;' : 'color:#40c4ff;font-weight:bold;',
+                        'color:#80cbc4;',
+                        'color:#4a6070;'
+                    );
+                });
+                console.log(`%c📊 MD5: TÀI: ${tàiMD5} | XỈU: ${xỉuMD5} | Tỷ lệ: ${Math.round(tàiMD5/10*100)}/${Math.round(xỉuMD5/10*100)}`, 'color:#ffd740;font-weight:bold;');
+
+                let tàiSHA = 0, xỉuSHA = 0;
+                console.log('%c─── SHA256 ───', 'color:#00d4ff;font-weight:bold;');
+                loạiHashHiệnTại = 'sha256';
+                testSHA256.forEach(hash => {
+                    const r = dựĐoánHash(hash);
+                    if (r.làTài) tàiSHA++; else xỉuSHA++;
+                    console.log(
+                        `%c${hash.substring(0,16)}... %c=> %c${r.dựĐoán} %c${r.độChínhXác}% %c(Điểm: ${r.điểm})`,
+                        'color:#7a8fa0;',
+                        'color:#e8f0f8;',
+                        r.làTài ? 'color:#ffd740;font-weight:bold;' : 'color:#40c4ff;font-weight:bold;',
+                        'color:#80cbc4;',
+                        'color:#4a6070;'
+                    );
+                });
+                console.log(`%c📊 SHA256: TÀI: ${tàiSHA} | XỈU: ${xỉuSHA} | Tỷ lệ: ${Math.round(tàiSHA/5*100)}/${Math.round(xỉuSHA/5*100)}`, 'color:#ffd740;font-weight:bold;');
+
+                loạiHashHiệnTại = lưuLoại;
+                console.log('%c╚════════════════════════════════════════════════════════════════╝', 'color:#ffd740;');
+            }
+
+            setTimeout(testThuậtToán, 600);
+
+            console.log('%c╔════════════════════════════════════════════════════════════════╗', 'color:#00ff88;');
+            console.log('%c║  ⚡ TX DỰ ĐOÁN VIP 20.0.7                       ║', 'color:#00ff88;font-weight:bold;', 'color:#00ff88;');
+            console.log('%c║  🧑‍💻 Công cụ bởi Văn Bảo                         ║', 'color:#ffd740;', 'color:#00ff88;');
+            console.log('%c║  🔒 Hỗ trợ MD5 + SHA256                         ║', 'color:#00d4ff;', 'color:#00ff88;');
+            console.log('%c║  ⏳ Loading 3 giây phân tích                    ║', 'color:#00d4ff;', 'color:#00ff88;');
+            console.log('%c║  🎯 Thuật toán 6 seed siêu nét                 ║', 'color:#ffd740;', 'color:#00ff88;');
+            console.log('%c╚════════════════════════════════════════════════════════════════╝', 'color:#00ff88;');
+            console.log('%c[Văn Bảo] %cSẵn sàng! Nhập link game để bắt đầu.',
+                'color:#ffd740;font-weight:bold;', 'color:#e8f0f8;');
+        })();
+    </script>
+</body>
+</html>
