@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TX OMEGA 29.1 - Quantum Matrix</title>
+    <style>
+        :root { --bg: #050a10; --bg2: #0c1520; --accent: #00ff88; --accent2: #00d4ff; --gold: #ffd740; --red: #ff5566; --purple: #bd00ff; --text: #e8f0f8; --text2: #7a8fa0; --border: #1a2d3d; --shadow-lg: 0 30px 80px rgba(0,0,0,0.95); }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: var(--text); user-select: none; }
+        #gameFrame { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; border: none; z-index: 1; }
+        
+        #loadingOverlay { position: fixed; inset: 0; background: rgba(5,10,16,0.98); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
+        #loadingOverlay.hidden { opacity: 0; visibility: hidden; }
+        .loader { width: 60px; height: 60px; border: 5px solid var(--border); border-top: 5px solid var(--purple); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .loading-text { color: var(--purple); font-weight: 800; letter-spacing: 3px; }
+        
+        #welcomeScreen { position: fixed; inset: 0; z-index: 1000; background: rgba(5,10,16,0.98); display: flex; align-items: center; justify-content: center; transition: all 0.5s; }
+        #welcomeScreen.fade-out { opacity: 0; transform: scale(1.05); pointer-events: none; }
+        .welcome-box { background: var(--bg2); border: 1px solid var(--purple); border-radius: 20px; padding: 30px; width: 400px; max-width: 90vw; text-align: center; box-shadow: var(--shadow-lg), 0 0 30px rgba(189,0,255,0.2); }
+        .tool-name { font-size: 24px; font-weight: 900; background: linear-gradient(90deg, var(--gold), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 15px; }
+        .input-group input { width: 100%; padding: 12px; background: #080f18; border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; margin-bottom: 15px; outline: none; }
+        .btn-enter { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 800; font-size: 15px; cursor: pointer; background: linear-gradient(135deg, var(--purple), var(--accent2)); color: #fff; }
+
+        #toolOverlay { position: fixed; z-index: 998; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+        #toolOverlay.active { opacity: 1; pointer-events: auto; }
+        .btn-toggle { position: fixed; top: 15px; left: 15px; z-index: 1001; background: rgba(12,21,32,0.9); border: 1px solid var(--gold); padding: 10px 18px; border-radius: 30px; color: var(--gold); cursor: pointer; font-weight: bold; font-size: 14px; display:flex; align-items:center; gap:8px;}
+        .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); animation: pulse 1.2s infinite; }
+        @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,215,64,0.4); } 50% { box-shadow: 0 0 0 8px rgba(255,215,64,0); } }
+        
+        .main-popup { position: fixed; top: 70px; left: 15px; width: 400px; max-width: calc(100vw - 30px); background: rgba(12,21,32,0.96); border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-shadow: var(--shadow-lg); max-height: 85vh; overflow-y: auto; transform: scale(0.9); opacity: 0; transition: all 0.2s; pointer-events: none; }
+        .main-popup.open { transform: scale(1); opacity: 1; pointer-events: auto; }
+        .popup-header { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .title { font-size: 15px; font-weight: 800; color: var(--gold); display: flex; align-items: center; gap: 8px;}
+        .btn-close { background: transparent; border: none; color: var(--text2); font-size: 18px; cursor: pointer; }
+        
+        .stats-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .stat-box { flex: 1; background: #0a121d; border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center; }
+        .stat-box span { display: block; font-size: 16px; font-weight: bold; }
+        .stat-box label { font-size: 10px; color: var(--text2); text-transform: uppercase; }
+        .stat-box.win span { color: var(--accent); }
+        .stat-box.loss span { color: var(--red); }
+        .stat-box.rate span { color: var(--gold); }
+
+        .dual-section { display: flex; gap: 10px; margin-bottom: 12px; }
+        .col-box { flex: 1; background: #0a121d; padding: 10px; border-radius: 10px; border: 1px solid var(--border); }
+        .col-title { font-size: 11px; color: var(--accent2); margin-bottom: 6px; font-weight: bold; text-align: center; }
+        .input-sm { width: 100%; padding: 7px; background: #050a10; border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 10px; margin-bottom: 6px; outline: none; font-family: monospace; }
+        .btn-group { display: flex; gap: 6px; }
+        .btn-sm { width: 100%; padding: 8px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; transition: 0.2s; }
+        .btn-sm.gold { background: var(--gold); color: #000; flex: 3; }
+        .btn-sm.blue { background: var(--accent2); color: #000; width: 100%; margin-bottom: 6px; }
+        .btn-sm.clear { background: transparent; color: var(--red); border: 1px solid rgba(255,85,102,0.5); flex: 1; }
+        .btn-sm:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        
+        .terminal-box { font-family: monospace; font-size: 10px; color: var(--text2); background: #050a10; padding: 8px; border-radius: 6px; border: 1px dashed var(--border); line-height: 1.5; margin-top: 8px; white-space: pre-wrap; max-height: 80px; overflow-y: auto; }
+        .hl-gold { color: var(--gold); } .hl-red { color: var(--red); } .hl-green { color: var(--accent); }
+        .hacking-text { color: var(--accent); animation: flicker 0.1s infinite; text-shadow: 0 0 5px var(--accent); }
+        @keyframes flicker { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .history-wrapper { position: relative; overflow: hidden; border-radius: 6px; margin: 8px 0; }
+        .history-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; }
+        .h-cell { aspect-ratio: 1; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; color: #000;}
+        .h-cell.T { background: var(--gold); } .h-cell.X { background: var(--accent2); }
+        .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--accent); box-shadow: 0 0 10px var(--accent); opacity: 0; }
+        .scanning .scan-line { animation: scan 1s ease-in-out; }
+        @keyframes scan { 0% { top: 0; opacity: 1; } 100% { top: 100%; opacity: 0; } }
+
+        .dice-view { display: flex; justify-content: center; gap: 8px; margin: 8px 0; }
+        .dice { width: 30px; height: 30px; background: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900; color: #000; }
+        
+        .final-pred { text-align: center; background: linear-gradient(135deg, #050a10, #0c1520); padding: 18px; border-radius: 12px; border: 1px solid var(--purple); position: relative; overflow: hidden; box-shadow: 0 0 20px rgba(189,0,255,0.1); display: flex; flex-direction: column; align-items: center; }
+        .final-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; display: block; position: relative; z-index: 2;}
+        
+        .neural-terminal { font-family: monospace; font-size: 11px; color: var(--accent); text-align: left; width: 100%; height: 120px; margin-bottom: 10px; padding: 8px; border: 1px solid var(--border); background: rgba(0,0,0,0.7); display: none; white-space: pre-wrap; overflow: hidden; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); position: relative; z-index: 2; }
+        .neural-terminal::after { content: '_'; animation: blink 0.5s infinite; color: var(--accent); }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .result-wrapper { display: none; position: relative; z-index: 2; width: 100%; }
+        .final-result { font-size: 42px; font-weight: 900; margin: 5px 0; position: relative; }
+        .final-result.T { color: var(--gold); text-shadow: 0 0 15px rgba(255,215,64,0.5); }
+        .final-result.X { color: var(--accent2); text-shadow: 0 0 15px rgba(0,212,255,0.5); }
+        .final-result.WAIT { color: var(--text2); text-shadow: none; font-size: 28px; margin: 15px 0; }
+        
+        .glitch { animation: glitchAnim 0.3s infinite; }
+        @keyframes glitchAnim { 0% { transform: translate(0) } 20% { transform: translate(-2px, 2px) } 40% { transform: translate(-2px, -2px) } 60% { transform: translate(2px, 2px) } 80% { transform: translate(2px, -2px) } 100% { transform: translate(0) } }
+
+        .final-percent { font-size: 22px; font-weight: bold; color: var(--text); margin-bottom: 8px; }
+        .progress-bg { width: 100%; height: 6px; background: #1a2838; border-radius: 10px; overflow: hidden; }
+        .progress-fg { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--purple), var(--gold)); border-radius: 10px; transition: width 0.5s; box-shadow: 0 0 10px var(--purple); }
+        
+        .advice-box { margin-top: 10px; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; background: rgba(255,85,102,0.1); color: var(--red); border: 1px solid var(--red); }
+        .advice-box.bet { background: rgba(0,255,136,0.1); color: var(--accent); border-color: var(--accent); }
+        
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold; margin-top: 8px; background: rgba(189,0,255,0.1); color: var(--purple); border: 1px solid rgba(189,0,255,0.3); }
+        
+        .alert-vip { animation: alertPulse 1s infinite; border-color: var(--red); }
+        @keyframes alertPulse { 0% { box-shadow: 0 0 0 0 rgba(255,85,102,0.5); } 50% { box-shadow: 0 0 25px 5px rgba(255,85,102,0); } 100% { box-shadow: 0 0 0 0 rgba(255,85,102,0); } }
+        
+        .money-mgt { margin-top: 12px; background: #0a121d; border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: left; display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 2; width: 100%; }
+        .money-mgt label { font-size: 11px; color: var(--text2); text-transform: uppercase; }
+        .money-mgt .bet-val { font-size: 16px; font-weight: bold; color: var(--gold); }
+
+        .btn-auto { width: 100%; margin-top: 12px; padding: 10px; background: #1a2838; color: var(--text); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; position: relative; z-index: 2; }
+        .btn-auto.active { background: var(--red); color: #fff; border-color: var(--red); }
+    </style>
+</head>
+<body>
+    <iframe id="gameFrame"></iframe>
+    <div id="loadingOverlay" class="hidden"><div class="loader"></div><div class="loading-text">ĐANG TẢI OMEGA...</div></div>
+    <div id="welcomeScreen">
+        <div class="welcome-box">
+            <div class="tool-name">⚡ OMEGA 29.1 ⚡</div>
+            <div class="input-group"><input type="text" id="inputLinkGame" value="https://lc79.bet"></div>
+            <button class="btn-enter" id="btnEnter">🚀 VÀO GAME</button>
+        </div>
+    </div>
+    <div id="toolOverlay">
+        <button class="btn-toggle" id="btnToggle"><span class="live-dot"></span> BẬT TOOL</button>
+        <div class="main-popup" id="mainPopup">
+            <div class="popup-header">
+                <span class="title">💎 OMEGA QUANTUM AI</span>
+                <button class="btn-close" id="btnClose">✕</button>
+            </div>
+            
+            <div class="stats-row">
+                <div class="stat-box win"><span id="winCount">0</span><label>Thắng</label></div>
+                <div class="stat-box loss"><span id="lossCount">0</span><label>Thua</label></div>
+                <div class="stat-box rate"><span id="winRate">0%</span><label>Tỷ lệ</label></div>
+            </div>
+
+            <div class="dual-section">
+                <div class="col-box">
+                    <div class="col-title">🔑 MD5</div>
+                    <input type="text" id="md5Input" class="input-sm" placeholder="Dán MD5 32 ký tự">
+                    <div class="btn-group">
+                        <button class="btn-sm gold" id="btnMd5">PHÂN TÍCH</button>
+                        <button class="btn-sm clear" id="btnMd5Clear">XOÁ</button>
+                    </div>
+                    <div class="terminal-box" id="md5Terminal">> Chờ MD5...</div>
+                </div>
+                <div class="col-box">
+                    <div class="col-title">📡 API CẦU</div>
+                    <input type="text" id="apiInput" class="input-sm" value="https://wtxmd52.tele68.com/v1/txmd5/lite-sessions?cp=R&cl=R&pf=web&at=3959701241b686f12e01bfe9c3a319b8">
+                    <button class="btn-sm blue" id="btnApi">ĐỌC CẦU</button>
+                    <div class="terminal-box" id="apiTerminal">> Chờ API...</div>
+                </div>
+            </div>
+
+            <div class="history-wrapper" id="historyWrapper">
+                <div class="history-grid" id="historyGrid"></div>
+                <div class="scan-line"></div>
+            </div>
+            <div class="dice-view" id="diceView"></div>
+
+            <div class="final-pred" id="finalPredBox">
+                <span class="final-label">TỔNG HỢP OMEGA AI</span>
+                
+                <div class="neural-terminal" id="neuralTerminal"></div>
+                
+                <div class="result-wrapper" id="resultWrapper">
+                    <div class="final-result" id="finalRes">...</div>
+                    <div class="final-percent" id="finalPct">0%</div>
+                    <div class="progress-bg"><div class="progress-fg" id="finalBar" style="width:0%"></div></div>
+                    <div class="badge" id="badgePattern">CHƯA XÁC ĐỊNH</div>
+                    <div class="advice-box" id="adviceBox">⏸️ CHỜ CẦU</div>
+                </div>
+
+                <div class="money-mgt">
+                    <label>💰 Gợi ý vốn (1-3-2-4)</label>
+                    <span class="bet-val" id="betSuggestion">1 Unit</span>
+                </div>
+            </div>
+            <button class="btn-auto" id="btnAutoTrack">⚡ AUTO CẬP NHẬT API (5s)</button>
+        </div>
+    </div>
+    <script>
+        const $ = id => document.getElementById(id);
+        let isAuto = false, autoInterval = null;
+        let winCount = 0, lossCount = 0, betStep = 1;
+        let lastPredictionSession = null, lastPredictionVote = null;
+
+        let metrics = {
+            md5: null, api: null, markov: { vote: null, conf: 0 }, rsi: { vote: null, val: 50, conf: 0 }, bio: { vote: null, conf: 0 }, macd: { vote: null, conf: 0 },
+            quantum: { vote: null, conf: 0 }, bayesian: { vote: null, conf: 0 }, fingerprint: { vote: null, conf: 0 }, weibull: { vote: null, conf: 0 }, jsd: { val: 0, conf: 0 }
+        };
+
+        $('btnEnter').onclick = () => {
+            let link = $('inputLinkGame').value.trim();
+            if (!link.startsWith('http')) link = 'https://' + link;
+            $('welcomeScreen').classList.add('fade-out');
+            $('loadingOverlay').classList.remove('hidden');
+            $('gameFrame').src = link;
+            setTimeout(() => { $('loadingOverlay').classList.add('hidden'); $('toolOverlay').classList.add('active'); }, 1500);
+        };
+        $('btnToggle').onclick = () => $('mainPopup').classList.toggle('open');
+        $('btnClose').onclick = () => $('mainPopup').classList.remove('open');
+
+        $('btnMd5Clear').onclick = () => { $('md5Input').value = ''; $('md5Terminal').innerHTML = '> Đã xoá...'; metrics.md5 = null; runNeuralNetwork(); $('md5Input').focus(); };
+
+        $('btnMd5').onclick = () => {
+            let c = $('md5Input').value.trim().toLowerCase().replace(/[^0-9a-f]/g, '');
+            if (c.length !== 32 && c.length !== 64) { $('md5Terminal').innerHTML = '<span class="hl-red">> Lỗi Hash!</span>'; metrics.md5=null; runNeuralNetwork(); return; }
+            $('md5Terminal').innerHTML = '<span class="hacking-text">> Đang bẻ khóa...</span>';
+            setTimeout(() => {
+                let sum=0, xor=0, bits=0; const b=[];
+                for(let i=0;i<c.length;i+=2){let bt=parseInt(c.substr(i,2),16);b.push(bt);sum+=bt;xor^=bt;let x=bt;while(x>0){bits+=x&1;x>>=1;}}
+                let v=[sum%2!==0?'T':'X', b[0]>127?'T':'X', b[15]%2!==0?'T':'X', xor%2===0?'T':'X', bits%2!==0?'T':'X', b[3]>b[4]?'T':'X', (sum+xor)%3===0?'T':'X'];
+                let t=v.filter(x=>x==='T').length, x=v.length-t;
+                metrics.md5 = { vote: t>x ? 'T' : 'X', conf: 55 };
+                $('md5Terminal').innerHTML = `✅ <span class="hl-green">Crack OK!</span>\n🔑 <span class="hl-gold">${c.substr(0,12)}...</span>\n📊 Sum: <span class="hl-green">${sum}</span>\n🗳 <span class="hl-gold">${t}/${v.length}</span> T | <span class="hl-red">${x}/${v.length}</span> X`;
+                runNeuralNetwork();
+            }, 800);
+        };
+
+        async function fetchAPI() {
+            $('apiTerminal').innerHTML = '> ⏳ Đang tải dữ liệu...';
+            $('historyWrapper').classList.add('scanning');
+            setTimeout(() => $('historyWrapper').classList.remove('scanning'), 1000);
+            
+            const apiUrl = $('apiInput').value.trim() + (apiUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+            let data = null;
+
+            try {
+                // Thử gọi trực tiếp API (Nhanh nhất)
+                let res = await fetch(apiUrl);
+                data = await res.json();
+            } catch (err1) {
+                try {
+                    // Nếu bị lỗi CORS, tự động gọi qua Proxy dự phòng
+                    $('apiTerminal').innerHTML = '> ⏳ Đang tải qua Proxy...';
+                    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(apiUrl);
+                    let res = await fetch(proxyUrl);
+                    data = await res.json();
+                } catch (err2) {
+                    $('apiTerminal').innerHTML = '<span class="hl-red">> Lỗi API/Proxy! Thử lại...</span>';
+                    return;
+                }
+            }
+
+            if (data && Array.isArray(data.list)) {
+                let arr = data.list.map(i => i.resultTruyenThong === "TAI" ? 'T' : 'X');
+                let stat = data.typeStat || {};
+                let last = data.list[0] || {};
+                if (lastPredictionSession) {
+                    let checkRes = data.list.find(s => s.id === lastPredictionSession);
+                    if (checkRes) {
+                        let actual = checkRes.resultTruyenThong === "TAI" ? 'T' : 'X';
+                        if (actual === lastPredictionVote) { winCount++; betStep = betStep >= 4 ? 1 : betStep + 1; } 
+                        else { lossCount++; betStep = 1; }
+                        lastPredictionSession = null; updateStatsUI();
+                    }
+                }
+                processAPI(arr, stat.TAI||0, stat.XIU||0, last.dices||[], last.point||0, last.id||0);
+            } else { $('apiTerminal').innerHTML = '<span class="hl-red">> Lỗi JSON!</span>'; }
+        }
+        
+        function processAPI(arr, tC, xC, dice, pt, id) {
+            $('historyGrid').innerHTML = '';
+            [...arr].reverse().forEach(i => { let d=document.createElement('div'); d.className=`h-cell ${i}`; d.innerText=i; $('historyGrid').appendChild(d); });
+            $('diceView').innerHTML = '';
+            dice.forEach(d => { let el=document.createElement('div'); el.className='dice'; el.innerText=d; $('diceView').appendChild(el); });
+            
+            let l1=arr[0], l2=arr[1], l3=arr[2], l4=arr[3];
+            let p='Ngẫu nhiên', c=0;
+            if(l1===l2 && l2===l3){metrics.api.vote=l1;c=88;p=`Bệt ${l1==='T'?'Tài':'Xỉu'}`;}
+            else if(l1!==l2 && l2!==l3 && l3!==l4){metrics.api.vote=l2;c=82;p='Cầu 1-1';}
+            else if(l1===l2 && l3===l4 && l1!==l3){metrics.api.vote=l3;c=78;p='Cầu 2-2';}
+            else { metrics.api.vote=null; c=0; p='Lộn xộn'; }
+            metrics.api.conf = c;
+
+            metrics.markov = calcMarkov(arr);
+            metrics.rsi = calcRSI(arr);
+            metrics.bio = calcBiorhythm(id);
+            metrics.macd = calcMACD(arr);
+            metrics.bayesian = calcBayesian(arr);
+            metrics.fingerprint = calcFingerprint(arr);
+            metrics.weibull = calcWeibull(arr);
+            metrics.jsd = calcJSD(arr);
+
+            $('apiTerminal').innerHTML = `Phiên: <span class="hl-gold">${id}</span>\n🎲 Xúc xắc: <span class="hl-green">[${dice.join(',')}]</span> = ${pt}\n📊 T:<span class="hl-gold">${tC}</span> | X:<span class="hl-red">${xC}</span>\n📡 Cầu: <span class="hl-gold">${p}</span>`;
+            runNeuralNetwork();
+        }
+
+        function calcMarkov(arr) { let h = [...arr].reverse(); if (h.length < 4) return { vote: null, conf: 0 }; let tT=0, tX=0, xT=0, xX=0; for(let i=0; i<h.length-1; i++){ if(h[i]==='T'&&h[i+1]==='T')tT++; else if(h[i]==='T'&&h[i+1]==='X')tX++; else if(h[i]==='X'&&h[i+1]==='T')xT++; else if(h[i]==='X'&&h[i+1]==='X')xX++; } let last = h[h.length-1]; if(last === 'T'){ let total = tT + tX; if(total===0)return{vote:'T',conf:50}; let pT=tT/total; return pT>=0.5?{vote:'T',conf:50+pT*30}:{vote:'X',conf:50+(1-pT)*30}; } else { let total = xT + xX; if(total===0)return{vote:'X',conf:50}; let pX=xX/total; return pX>=0.5?{vote:'X',conf:50+pX*30}:{vote:'T',conf:50+(1-pX)*30}; } }
+        function calcRSI(arr) { if(arr.length===0) return { vote: null, val: 50, conf: 0 }; let h = arr.slice(0, 14); let sum = 0; h.forEach(x => sum += (x === 'T' ? 1 : -1)); let rsi = 50 + (sum / 14) * 50; if(rsi >= 65) return { vote: 'X', val: rsi, conf: 65 }; if(rsi <= 35) return { vote: 'T', val: rsi, conf: 65 }; return { vote: null, val: rsi, conf: 0 }; }
+        function calcBiorhythm(sessionId) { if(!sessionId) return { vote: null, conf: 0 }; let phy = Math.sin((sessionId / 23) * 2 * Math.PI); let emo = Math.sin((sessionId / 28) * 2 * Math.PI); let totalBio = (phy + emo) / 2; if(totalBio > 0.3) return { vote: 'T', conf: 60 }; if(totalBio < -0.3) return { vote: 'X', conf: 60 }; return { vote: null, conf: 0 }; }
+        function calcMACD(arr) { let h = [...arr].reverse(); if (h.length < 10) return { vote: null, conf: 0 }; let ema3 = 0, ema10 = 0; let k3 = 2 / (3 + 1), k10 = 2 / (10 + 1); for (let i = 0; i < h.length; i++) { let val = h[i] === 'T' ? 1 : 0; if (i === 0) { ema3 = val; ema10 = val; } else { ema3 = val * k3 + ema3 * (1 - k3); ema10 = val * k10 + ema10 * (1 - k10); } } let macd = ema3 - ema10; if (macd > 0.1) return { vote: 'T', conf: 68 }; if (macd < -0.1) return { vote: 'X', conf: 68 }; return { vote: null, conf: 0 }; }
+        function calcBayesian(arr) { if (arr.length < 5) return { vote: null, conf: 0 }; let h = [...arr].reverse(); let pT = h.filter(x => x === 'T').length / h.length; let pX = 1 - pT; let last = h[h.length - 1]; let pT_given_last = (last === 'T') ? pT * 1.1 : pT * 0.9; let pX_given_last = (last === 'X') ? pX * 1.1 : pX * 0.9; if (pT_given_last > pX_given_last) return { vote: 'T', conf: 50 + pT_given_last * 30 }; return { vote: 'X', conf: 50 + pX_given_last * 30 }; }
+        function calcFingerprint(arr) { if (arr.length < 5) return { vote: null, conf: 0 }; let h = arr.slice(0, 5).reverse().join(''); if (h === 'TTTTT' || h === 'XXXXX') return { vote: arr[0], conf: 85 }; if (h === 'TXTXT' || h === 'XTXTX') return { vote: arr[1], conf: 80 }; if (h === 'TXXTX' || h === 'XTTXX') return { vote: arr[2], conf: 75 }; return { vote: null, conf: 0 }; }
+        function calcWeibull(arr) { if (arr.length === 0) return { vote: null, conf: 0 }; let streak = 1; for (let i = 1; i < arr.length; i++) { if (arr[i] === arr[0]) streak++; else break; } if (streak >= 4) { let k = 1.5; let lambda = 5; let survival = Math.exp(-Math.pow(streak / lambda, k)); if (survival < 0.4) return { vote: arr[0] === 'T' ? 'X' : 'T', conf: 75 }; } return { vote: null, conf: 0 }; }
+        function calcJSD(arr) { if (arr.length < 10) return { val: 0, conf: 0 }; let h1 = arr.slice(0, 5), h2 = arr.slice(5, 10); let p1T = h1.filter(x => x === 'T').length / 5; let p2T = h2.filter(x => x === 'T').length / 5; let mT = (p1T + p2T) / 2; let jsd = 0.5 * (p1T * Math.log2((p1T||0.01) / (mT||0.01)) + p2T * Math.log2((p2T||0.01) / (mT||0.01))); return { val: jsd, conf: jsd > 0.3 ? 10 : 0 }; }
+
+        $('btnApi').onclick = fetchAPI;
+        function updateStatsUI() { $('winCount').innerText = winCount; $('lossCount').innerText = lossCount; let total = winCount + lossCount; $('winRate').innerText = total > 0 ? Math.round((winCount/total)*100) + '%' : '0%'; $('betSuggestion').innerText = betStep + ' Unit'; }
+
+        function runNeuralNetwork() {
+            if(!metrics.md5 && !metrics.api) return;
+            $('resultWrapper').style.display = 'none';
+            $('neuralTerminal').style.display = 'block';
+            $('finalPredBox').classList.remove('alert-vip');
+            let t = $('neuralTerminal'); t.innerHTML = '';
+            let steps = [
+                `> [1/6] Khởi động Quantum Ensemble v9...\n`,
+                `> [2/6] Rút trích Pattern Fingerprint...\n`,
+                `> [3/6] Tính toán Weibull Survival...\n`,
+                `> [4/6] Đo lường JSD Uncertainty...\n`,
+                `> [5/6] Cập nhật Bayesian Meta...\n`,
+                `> [6/6] Sụp đổ hàm sóng lượng tử...\n`
+            ];
+            let i = 0;
+            let interval = setInterval(() => {
+                t.innerHTML += steps[i]; t.scrollTop = t.scrollHeight; i++;
+                if (i >= steps.length) { clearInterval(interval); setTimeout(showFinalResult, 300); }
+            }, 250);
+        }
+
+        function showFinalResult() {
+            $('neuralTerminal').style.display = 'none';
+            $('resultWrapper').style.display = 'block';
+            
+            if (metrics.api && !metrics.api.vote) {
+                $('finalRes').className = 'final-result WAIT';
+                $('finalRes').innerText = '⏸️ CHỜ CẦU';
+                $('finalPct').innerText = '0%';
+                $('finalBar').style.width = '0%';
+                $('badgePattern').innerText = 'CẦU LỘN XỘN';
+                $('badgePattern').style.background = 'rgba(255,85,102,0.1)'; $('badgePattern').style.color = 'var(--red)'; $('badgePattern').style.borderColor = 'var(--red)';
+                $('adviceBox').className = 'advice-box'; $('adviceBox').innerText = '🚫 KHÔNG NÊN CƯỢC VÁN NÀY';
+                $('finalPredBox').classList.remove('alert-vip');
+                return;
+            }
+            
+            let votes = [];
+            if (metrics.md5) votes.push({ v: metrics.md5.vote, w: 1.0 });
+            if (metrics.api) votes.push({ v: metrics.api.vote, w: 2.0 });
+            if (metrics.markov.vote) votes.push({ v: metrics.markov.vote, w: 1.5 });
+            if (metrics.rsi.vote) votes.push({ v: metrics.rsi.vote, w: 1.2 });
+            if (metrics.bio.vote) votes.push({ v: metrics.bio.vote, w: 0.8 });
+            if (metrics.macd.vote) votes.push({ v: metrics.macd.vote, w: 1.3 });
+            if (metrics.bayesian.vote) votes.push({ v: metrics.bayesian.vote, w: 1.6 });
+            if (metrics.fingerprint.vote) votes.push({ v: metrics.fingerprint.vote, w: 1.8 });
+            if (metrics.weibull.vote) votes.push({ v: metrics.weibull.vote, w: 1.4 });
+            
+            if (votes.length === 0) return;
+            let tScore = 0, xScore = 0;
+            votes.forEach(vt => { if (vt.v === 'T') tScore += vt.w; else xScore += vt.w; });
+            
+            let finalVote = tScore > xScore ? 'T' : 'X';
+            let finalConf = Math.round((Math.max(tScore, xScore) / (tScore + xScore)) * 100);
+            if (metrics.jsd.val > 0.3) finalConf -= 15;
+            if (metrics.md5 && metrics.api && metrics.md5.vote === metrics.api.vote) finalConf = Math.min(99, finalConf + 15);
+            
+            let statusText = '💎 OMEGA AI';
+            if (finalConf >= 90) statusText = '👑 ĐỒNG THUẬN TUYỆT ĐỐI';
+            else if (finalConf >= 80) statusText = '🔥 TÍN HIỆU MẠNH';
+            
+            $('finalRes').className = `final-result ${finalVote} glitch`;
+            $('finalRes').innerText = finalVote === 'T' ? '🔥 TÀI' : '❄️ XỈU';
+            setTimeout(() => $('finalRes').classList.remove('glitch'), 600);
+            
+            $('finalPct').innerText = finalConf + '%';
+            $('finalBar').style.width = finalConf + '%';
+            $('badgePattern').innerText = statusText;
+            $('badgePattern').style.background = 'rgba(189,0,255,0.1)'; $('badgePattern').style.color = 'var(--purple)'; $('badgePattern').style.borderColor = 'rgba(189,0,255,0.3)';
+            
+            if (finalConf >= 80) {
+                $('adviceBox').className = 'advice-box bet'; $('adviceBox').innerText = '🚀 VÀO TIỀN MẠNH TAY';
+                $('finalPredBox').classList.add('alert-vip');
+            } else {
+                $('adviceBox').className = 'advice-box'; $('adviceBox').innerText = '⚠️ CẦU CHƯA CHẮC, CƯỢC NHẸ';
+                $('finalPredBox').classList.remove('alert-vip');
+            }
+
+            if (metrics.api) {
+                let idMatch = $('apiTerminal').innerText.match(/Phiên: (\d+)/);
+                if (idMatch) { lastPredictionSession = parseInt(idMatch[1]) + 1; lastPredictionVote = finalVote; }
+            }
+        }
+
+        $('btnAutoTrack').onclick = () => {
+            if(isAuto){clearInterval(autoInterval);isAuto=false;$('btnAutoTrack').classList.remove('active');$('btnAutoTrack').innerText='⚡ AUTO CẬP NHẬT API (5s)';}
+            else{fetchAPI();autoInterval=setInterval(fetchAPI,5000);isAuto=true;$('btnAutoTrack').classList.add('active');$('btnAutoTrack').innerText='⏸️ ĐANG AUTO (5s)';}
+        };
+    </script>
+</body>
+</html>
