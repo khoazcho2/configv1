@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TX SUPER VIP 24.1 - Fast Engine</title>
+    <style>
+        :root { --bg: #050a10; --bg2: #0c1520; --accent: #00ff88; --accent2: #00d4ff; --gold: #ffd740; --red: #ff5566; --purple: #bd00ff; --text: #e8f0f8; --text2: #7a8fa0; --border: #1a2d3d; --shadow-lg: 0 30px 80px rgba(0,0,0,0.95); }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: var(--text); user-select: none; }
+        #gameFrame { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; border: none; z-index: 1; }
+        #loadingOverlay { position: fixed; inset: 0; background: rgba(5,10,16,0.98); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
+        #loadingOverlay.hidden { opacity: 0; visibility: hidden; }
+        .loader { width: 60px; height: 60px; border: 5px solid var(--border); border-top: 5px solid var(--purple); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .loading-text { color: var(--purple); font-weight: 800; letter-spacing: 3px; }
+        #welcomeScreen { position: fixed; inset: 0; z-index: 1000; background: rgba(5,10,16,0.98); display: flex; align-items: center; justify-content: center; transition: all 0.5s; }
+        #welcomeScreen.fade-out { opacity: 0; transform: scale(1.05); pointer-events: none; }
+        .welcome-box { background: var(--bg2); border: 1px solid var(--purple); border-radius: 20px; padding: 30px; width: 400px; max-width: 90vw; text-align: center; box-shadow: var(--shadow-lg), 0 0 30px rgba(189,0,255,0.2); }
+        .tool-name { font-size: 24px; font-weight: 900; background: linear-gradient(90deg, var(--gold), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 15px; }
+        .input-group input { width: 100%; padding: 12px; background: #080f18; border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; margin-bottom: 15px; outline: none; }
+        .btn-enter { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: 800; font-size: 15px; cursor: pointer; background: linear-gradient(135deg, var(--purple), var(--accent2)); color: #fff; }
+        #toolOverlay { position: fixed; z-index: 998; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+        #toolOverlay.active { opacity: 1; pointer-events: auto; }
+        .btn-toggle { position: fixed; top: 15px; left: 15px; z-index: 1001; background: rgba(12,21,32,0.9); border: 1px solid var(--gold); padding: 10px 18px; border-radius: 30px; color: var(--gold); cursor: pointer; font-weight: bold; font-size: 14px; }
+        .main-popup { position: fixed; top: 70px; left: 15px; width: 360px; max-width: calc(100vw - 30px); background: rgba(12,21,32,0.95); border: 1px solid var(--purple); border-radius: 16px; padding: 18px; box-shadow: var(--shadow-lg); max-height: 85vh; overflow-y: auto; transform: scale(0.9); opacity: 0; transition: all 0.2s; pointer-events: none; }
+        .main-popup.open { transform: scale(1); opacity: 1; pointer-events: auto; }
+        .popup-header { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .title { font-size: 15px; font-weight: 800; color: var(--gold); }
+        .btn-close { background: transparent; border: none; color: var(--text2); font-size: 18px; cursor: pointer; }
+        .dual-section { display: flex; gap: 10px; margin-bottom: 12px; }
+        .col-box { flex: 1; background: #0a121d; padding: 10px; border-radius: 10px; border: 1px solid var(--border); }
+        .col-title { font-size: 11px; color: var(--accent2); margin-bottom: 6px; font-weight: bold; text-align: center; }
+        .input-sm { width: 100%; padding: 7px; background: #050a10; border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 10px; margin-bottom: 6px; outline: none; font-family: monospace; }
+        .btn-sm { width: 100%; padding: 7px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; }
+        .btn-sm.gold { background: var(--gold); color: #000; }
+        .btn-sm.blue { background: var(--accent2); color: #000; }
+        .terminal-box { font-family: monospace; font-size: 10px; color: var(--text2); background: #050a10; padding: 8px; border-radius: 6px; border: 1px dashed var(--border); line-height: 1.5; margin-top: 8px; white-space: pre-wrap; max-height: 100px; overflow-y: auto; }
+        .hl-gold { color: var(--gold); } .hl-red { color: var(--red); } .hl-green { color: var(--accent); }
+        .history-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; margin: 8px 0; }
+        .h-cell { aspect-ratio: 1; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; color: #000;}
+        .h-cell.T { background: var(--gold); } .h-cell.X { background: var(--accent2); }
+        .dice-view { display: flex; justify-content: center; gap: 8px; margin: 8px 0; }
+        .dice { width: 30px; height: 30px; background: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900; color: #000; }
+        .final-pred { text-align: center; background: #0d1525; padding: 18px; border-radius: 12px; border: 1px solid var(--purple); box-shadow: 0 0 20px rgba(189,0,255,0.1); }
+        .final-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 2px; }
+        .final-result { font-size: 40px; font-weight: 900; margin: 5px 0; }
+        .final-result.T { color: var(--gold); text-shadow: 0 0 15px rgba(255,215,64,0.5); }
+        .final-result.X { color: var(--accent2); text-shadow: 0 0 15px rgba(0,212,255,0.5); }
+        .final-percent { font-size: 22px; font-weight: bold; color: var(--text); margin-bottom: 8px; }
+        .progress-bg { width: 100%; height: 6px; background: #1a2838; border-radius: 10px; overflow: hidden; }
+        .progress-fg { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--gold)); border-radius: 10px; transition: width 0.5s; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: bold; margin-top: 5px; background: rgba(189,0,255,0.1); color: var(--purple); border: 1px solid rgba(189,0,255,0.3); }
+        .btn-auto { width: 100%; margin-top: 12px; padding: 10px; background: #1a2838; color: var(--text); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .btn-auto.active { background: var(--red); color: #fff; border-color: var(--red); }
+    </style>
+</head>
+<body>
+    <iframe id="gameFrame"></iframe>
+    <div id="loadingOverlay" class="hidden"><div class="loader"></div><div class="loading-text">ĐANG TẢI...</div></div>
+    <div id="welcomeScreen">
+        <div class="welcome-box">
+            <div class="tool-name">⚡ SUPER VIP 24.1 ⚡</div>
+            <div class="input-group"><input type="text" id="inputLinkGame" value="https://lc79.bet"></div>
+            <button class="btn-enter" id="btnEnter">🚀 VÀO GAME</button>
+        </div>
+    </div>
+    <div id="toolOverlay">
+        <button class="btn-toggle" id="btnToggle">⚡ BẬT TOOL</button>
+        <div class="main-popup" id="mainPopup">
+            <div class="popup-header"><span class="title">👑 AI HYBRID ENGINE</span><button class="btn-close" id="btnClose">✕</button></div>
+            <div class="dual-section">
+                <div class="col-box">
+                    <div class="col-title">🔑 MD5</div>
+                    <input type="text" id="md5Input" class="input-sm" placeholder="Dán MD5 32 ký tự">
+                    <button class="btn-sm gold" id="btnMd5">PHÂN TÍCH</button>
+                    <div class="terminal-box" id="md5Terminal">> Chờ MD5...</div>
+                </div>
+                <div class="col-box">
+                    <div class="col-title">📡 API CẦU</div>
+                    <input type="text" id="apiInput" class="input-sm" value="https://wtxmd52.tele68.com/v1/txmd5/lite-sessions?cp=R&cl=R&pf=web&at=3959701241b686f12e01bfe9c3a319b8">
+                    <button class="btn-sm blue" id="btnApi">ĐỌC CẦU</button>
+                    <div class="terminal-box" id="apiTerminal">> Chờ API...</div>
+                </div>
+            </div>
+            <div class="history-grid" id="historyGrid"></div>
+            <div class="dice-view" id="diceView"></div>
+            <div class="final-pred">
+                <div class="final-label">TỔNG HỢP AI</div>
+                <div class="final-result" id="finalRes">...</div>
+                <div class="final-percent" id="finalPct">0%</div>
+                <div class="progress-bg"><div class="progress-fg" id="finalBar" style="width:0%"></div></div>
+                <div class="badge" id="badgePattern">CHƯA XÁC ĐỊNH</div>
+            </div>
+            <button class="btn-auto" id="btnAutoTrack">⚡ AUTO CẬP NHẬT (5s)</button>
+        </div>
+    </div>
+    <script>
+        const $ = id => document.getElementById(id);
+        let md5Vote = null, apiVote = null, apiConf = 0, isAuto = false, autoInterval = null;
+        
+        $('btnEnter').onclick = () => {
+            let link = $('inputLinkGame').value.trim();
+            if (!link.startsWith('http')) link = 'https://' + link;
+            $('welcomeScreen').classList.add('fade-out');
+            $('loadingOverlay').classList.remove('hidden');
+            $('gameFrame').src = link;
+            setTimeout(() => { $('loadingOverlay').classList.add('hidden'); $('toolOverlay').classList.add('active'); }, 1500);
+        };
+        $('btnToggle').onclick = () => $('mainPopup').classList.toggle('open');
+        $('btnClose').onclick = () => $('mainPopup').classList.remove('open');
+
+        // 1. MD5
+        $('btnMd5').onclick = () => {
+            let c = $('md5Input').value.trim().toLowerCase().replace(/[^0-9a-f]/g, '');
+            if (c.length !== 32 && c.length !== 64) { $('md5Terminal').innerHTML = '<span class="hl-red">> Lỗi Hash!</span>'; md5Vote=null; syn(); return; }
+            let sum=0, xor=0, bits=0; const b=[];
+            for(let i=0;i<c.length;i+=2){let bt=parseInt(c.substr(i,2),16);b.push(bt);sum+=bt;xor^=bt;let x=bt;while(x>0){bits+=x&1;x>>=1;}}
+            let v=[sum%2!==0?'T':'X', b[0]>127?'T':'X', b[15]%2!==0?'T':'X', xor%2===0?'T':'X', bits%2!==0?'T':'X', b[3]>b[4]?'T':'X', (sum+xor)%3===0?'T':'X'];
+            let t=v.filter(x=>x==='T').length, x=v.length-t;
+            md5Vote = t>x ? 'T' : 'X';
+            $('md5Terminal').innerHTML = `🔑 <span class="hl-gold">${c.substr(0,12)}...</span>\n📊 Sum: <span class="hl-green">${sum}</span> → ${sum%2===0?'XỈU':'TÀI'}\n🔀 XOR: <span class="hl-green">0x${xor.toString(16)}</span>\n🗳 <span class="hl-gold">${t}/${v.length}</span> T | <span class="hl-red">${x}/${v.length}</span> X`;
+            syn();
+        };
+
+        // 2. API
+        async function fetchAPI() {
+            $('apiTerminal').innerHTML = '> ⏳ Đang tải...';
+            try {
+                const res = await fetch($('apiInput').value + '&_t=' + Date.now());
+                const data = await res.json();
+                if (data && Array.isArray(data.list)) {
+                    let arr = data.list.map(i => i.resultTruyenThong === "TAI" ? 'T' : 'X');
+                    let stat = data.typeStat || {};
+                    let last = data.list[0] || {};
+                    processAPI(arr, stat.TAI||0, stat.XIU||0, last.dices||[], last.point||0, last.id||0);
+                } else { $('apiTerminal').innerHTML = '<span class="hl-red">> Lỗi JSON!</span>'; }
+            } catch(e) { $('apiTerminal').innerHTML = '<span class="hl-red">> Lỗi Mạng/CORS!</span>'; }
+        }
+        
+        function processAPI(arr, tC, xC, dice, pt, id) {
+            $('historyGrid').innerHTML = '';
+            [...arr].reverse().forEach(i => { let d=document.createElement('div'); d.className=`h-cell ${i}`; d.innerText=i; $('historyGrid').appendChild(d); });
+            $('diceView').innerHTML = '';
+            dice.forEach(d => { let el=document.createElement('div'); el.className='dice'; el.innerText=d; $('diceView').appendChild(el); });
+            
+            let l1=arr[0], l2=arr[1], l3=arr[2], l4=arr[3];
+            let p='Ngẫu nhiên', c=55;
+            if(l1===l2 && l2===l3){apiVote=l1;c=88;p=`Bệt ${l1==='T'?'Tài':'Xỉu'}`;}
+            else if(l1!==l2 && l2!==l3 && l3!==l4){apiVote=l2;c=82;p='Cầu 1-1';}
+            else if(l1===l2 && l3===l4 && l1!==l3){apiVote=l3;c=78;p='Cầu 2-2';}
+            else { let tr=arr.slice(0,5).filter(x=>x==='T').length; apiVote=tr>=3?'T':'X'; c=65; p='Xu hướng'; }
+            
+            apiConf = c;
+            $('apiTerminal').innerHTML = `Phiên: <span class="hl-gold">${id}</span>\n🎲 Xúc xắc: <span class="hl-green">[${dice.join(',')}]</span> = ${pt}\n📊 T:<span class="hl-gold">${tC}</span> | X:<span class="hl-red">${xC}</span>\n📡 Cầu: <span class="hl-gold">${p}</span>`;
+            syn();
+        }
+        $('btnApi').onclick = fetchAPI;
+
+        // 3. Tổng hợp
+        function syn() {
+            if(!md5Vote && !apiVote) return;
+            let v=null, c=0, t='CHỜ DỮ LIỆU';
+            if(md5Vote && apiVote) {
+                if(md5Vote===apiVote){v=apiVote;c=Math.min(99,apiConf+15);t='👑 ĐỒNG THUẬN VIP';}
+                else{v=apiVote;c=apiConf-5;t='⚠️ CẦU CHỦ ĐẠO';}
+            } else if(apiVote){v=apiVote;c=apiConf;t='DỰA VÀO CẦU API';}
+            else if(md5Vote){v=md5Vote;c=55;t='DỰA VÀO MD5';}
+            
+            $('finalRes').className = `final-result ${v}`;
+            $('finalRes').innerText = v==='T'?'🔥 TÀI':'❄️ XỈU';
+            $('finalPct').innerText = c+'%';
+            $('finalBar').style.width = c+'%';
+            $('badgePattern').innerText = t;
+        }
+
+        // Auto 5s
+        $('btnAutoTrack').onclick = () => {
+            if(isAuto){clearInterval(autoInterval);isAuto=false;$('btnAutoTrack').classList.remove('active');$('btnAutoTrack').innerText='⚡ AUTO CẬP NHẬT (5s)';}
+            else{fetchAPI();autoInterval=setInterval(fetchAPI,5000);isAuto=true;$('btnAutoTrack').classList.add('active');$('btnAutoTrack').innerText='⏸️ ĐANG AUTO (5s)';}
+        };
+    </script>
+</body>
+</html>
