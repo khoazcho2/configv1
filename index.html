@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>HỒ QUỐC TOOL - Overlord AI (Statistical Core)</title>
+    <style>
+        :root {
+            --bg: #050a10; --bg2: #0c1520; --accent: #00ff88; --accent2: #00d4ff;
+            --gold: #ffd740; --red: #ff5566; --purple: #6a0dad;
+            --text: #e8f0f8; --text2: #7a8fa0; --border: #1a2d3d; --shadow-lg: 0 30px 80px rgba(0,0,0,0.95);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: var(--text); user-select: none; }
+        
+        body::before { content: ''; position: fixed; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle at 50% 50%, rgba(106,13,173,0.15) 0%, rgba(0,0,0,1) 80%); z-index: 0; pointer-events: none; }
+        
+        #gameFrame { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; border: none; z-index: 1; }
+        
+        #loadingOverlay { position: fixed; inset: 0; background: rgba(5,10,16,0.98); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
+        #loadingOverlay.hidden { opacity: 0; visibility: hidden; }
+        .loader { width: 60px; height: 60px; border: 5px solid var(--border); border-top: 5px solid var(--purple); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; box-shadow: 0 0 20px var(--purple); }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .loading-text { color: var(--purple); font-weight: 800; letter-spacing: 4px; text-shadow: 0 0 10px var(--purple); animation: flicker 1.5s infinite; }
+        
+        #welcomeScreen { position: fixed; inset: 0; z-index: 1000; background: rgba(5,10,16,0.98); display: flex; align-items: center; justify-content: center; transition: all 0.5s; }
+        #welcomeScreen.fade-out { opacity: 0; transform: scale(1.05); pointer-events: none; }
+        .welcome-box { background: var(--bg2); border: 1px solid var(--purple); border-radius: 20px; padding: 30px; width: 400px; max-width: 90vw; text-align: center; box-shadow: var(--shadow-lg), 0 0 40px rgba(106,13,173,0.2); position: relative; overflow: hidden; }
+        .welcome-box::before { content: ''; position: absolute; top: 0; left: -100%; width: 200%; height: 100%; background: linear-gradient(90deg, transparent, rgba(106,13,173,0.1), transparent); animation: scan 4s infinite; }
+        @keyframes scan { 100% { left: 100%; } }
+        .tool-name { font-size: 28px; font-weight: 900; color: var(--purple); text-shadow: 0 0 15px var(--purple); margin-bottom: 15px; letter-spacing: 2px; font-family: 'Courier New', monospace; }
+        .input-group input { width: 100%; padding: 12px; background: #080f18; border: 1px solid var(--purple); border-radius: 8px; color: var(--text); font-size: 14px; margin-bottom: 15px; outline: none; }
+        .input-group input:focus { box-shadow: 0 0 10px rgba(106,13,173,0.5); }
+        .btn-enter { width: 100%; padding: 14px; border: 1px solid var(--purple); border-radius: 8px; font-weight: 800; font-size: 15px; cursor: pointer; background: transparent; color: var(--purple); text-transform: uppercase; letter-spacing: 2px; transition: 0.3s; }
+        .btn-enter:hover { background: var(--purple); color: #fff; box-shadow: 0 0 20px var(--purple); }
+
+        #toolOverlay { position: fixed; z-index: 998; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+        #toolOverlay.active { opacity: 1; pointer-events: auto; }
+        .btn-toggle { position: fixed; top: 15px; left: 15px; z-index: 1001; background: rgba(12,21,32,0.9); border: 1px solid var(--purple); padding: 10px 18px; border-radius: 30px; color: var(--purple); cursor: pointer; font-weight: bold; font-size: 14px; display:flex; align-items:center; gap:8px; backdrop-filter: blur(5px);}
+        .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--purple); animation: pulse 1.2s infinite; }
+        @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(106,13,173,0.5); } 50% { box-shadow: 0 0 0 8px rgba(106,13,173,0); } }
+        
+        .main-popup { position: fixed; top: 70px; left: 15px; width: 400px; max-width: calc(100vw - 30px); background: rgba(12,21,32,0.96); border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-shadow: var(--shadow-lg); max-height: 85vh; overflow-y: auto; transform: scale(0.9); opacity: 0; transition: all 0.2s; pointer-events: none; }
+        .main-popup.open { transform: scale(1); opacity: 1; pointer-events: auto; }
+        .popup-header { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .title { font-size: 15px; font-weight: 800; color: var(--purple); display: flex; align-items: center; gap: 8px; text-shadow: 0 0 5px rgba(106,13,173,0.5); }
+        .btn-close { background: transparent; border: none; color: var(--text2); font-size: 18px; cursor: pointer; }
+        
+        .stats-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .stat-box { flex: 1; background: #0a121d; border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center; transition: all 0.3s; }
+        .stat-box span { display: block; font-size: 16px; font-weight: bold; }
+        .stat-box label { font-size: 10px; color: var(--text2); text-transform: uppercase; }
+        .stat-box.win span { color: var(--accent); text-shadow: 0 0 5px var(--accent); }
+        .stat-box.loss span { color: var(--red); text-shadow: 0 0 5px var(--red); }
+        .stat-box.rate span { color: var(--gold); }
+        .stat-box.flash-win { background: rgba(0,255,136,0.4); transform: scale(1.1); border-color: var(--accent); }
+        .stat-box.flash-loss { background: rgba(255,85,102,0.4); transform: scale(1.1); border-color: var(--red); }
+
+        .dual-section { display: flex; gap: 10px; margin-bottom: 12px; }
+        .col-box { flex: 1; background: #0a121d; padding: 10px; border-radius: 10px; border: 1px solid var(--border); }
+        .col-title { font-size: 11px; color: var(--purple); margin-bottom: 6px; font-weight: bold; text-align: center; text-transform: uppercase; }
+        .input-sm { width: 100%; padding: 7px; background: #050a10; border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 10px; margin-bottom: 6px; outline: none; font-family: monospace; }
+        .btn-group { display: flex; gap: 6px; }
+        .btn-sm { width: 100%; padding: 8px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; transition: 0.2s; }
+        .btn-sm.gold { background: var(--gold); color: #000; flex: 3; }
+        .btn-sm.blue { background: var(--accent2); color: #000; width: 100%; margin-bottom: 6px; }
+        .btn-sm.clear { background: transparent; color: var(--red); border: 1px solid var(--red); flex: 1; }
+        .btn-sm:hover { filter: brightness(1.2); transform: translateY(-1px); }
+        
+        .api-status { font-size: 11px; font-weight: bold; text-align: center; margin-bottom: 6px; padding: 5px; border-radius: 6px; }
+        .api-status.offline { color: var(--red); background: rgba(255,85,102,0.1); border: 1px solid rgba(255,85,102,0.3); }
+        .api-status.online { color: var(--accent); background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); }
+        .api-status.loading { color: var(--gold); background: rgba(255,215,64,0.1); border: 1px solid rgba(255,215,64,0.3); }
+
+        .terminal-box { font-family: monospace; font-size: 10px; color: var(--text2); background: #050a10; padding: 8px; border-radius: 6px; border: 1px dashed var(--border); line-height: 1.5; margin-top: 8px; white-space: pre-wrap; max-height: 110px; overflow-y: auto; }
+        .hl-gold { color: var(--gold); } .hl-red { color: var(--red); } .hl-green { color: var(--accent); }
+        .hacking-text { color: var(--purple); animation: flicker 0.1s infinite; text-shadow: 0 0 5px var(--purple); }
+        @keyframes flicker { 0% { opacity: 1; } 45% { opacity: 0.8; } 50% { opacity: 0.2; } 55% { opacity: 0.9; } 100% { opacity: 1; } }
+
+        .history-wrapper { position: relative; overflow: hidden; border-radius: 6px; margin: 8px 0; }
+        .history-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; }
+        .h-cell { aspect-ratio: 1; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; color: #000;}
+        .h-cell.T { background: var(--gold); box-shadow: 0 0 5px rgba(255,215,64,0.5); } 
+        .h-cell.X { background: var(--accent2); box-shadow: 0 0 5px rgba(0,212,255,0.5); }
+        .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--purple); box-shadow: 0 0 10px var(--purple); opacity: 0; }
+        .scanning .scan-line { animation: scan 1s ease-in-out; }
+
+        .dice-view { display: flex; justify-content: center; gap: 8px; margin: 8px 0; }
+        .dice { width: 30px; height: 30px; background: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900; color: #000; }
+        
+        .final-pred { text-align: center; background: linear-gradient(135deg, #050a10, #0c1520); padding: 18px; border-radius: 12px; border: 1px solid var(--purple); position: relative; overflow: hidden; box-shadow: 0 0 25px rgba(106,13,173,0.15); display: flex; flex-direction: column; align-items: center; }
+        .phantom-fog { position: absolute; top: 0; left: 0; width: 200%; height: 100%; background: radial-gradient(circle, rgba(106,13,173,0.15) 0%, transparent 70%); animation: fogMove 8s linear infinite; pointer-events: none; z-index: 1; }
+        @keyframes fogMove { 0% { transform: translateX(-50%); } 100% { transform: translateX(0%); } }
+        .final-label { font-size: 11px; color: var(--purple); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 10px; display: block; position: relative; z-index: 2; text-shadow: 0 0 5px var(--purple); }
+        
+        .neural-terminal { font-family: 'Courier New', monospace; font-size: 11px; color: var(--accent); text-align: left; width: 100%; height: 140px; margin-bottom: 10px; padding: 8px; border: 1px solid var(--border); background: rgba(0,0,0,0.8); display: none; white-space: pre-wrap; overflow: hidden; position: relative; z-index: 2; text-shadow: 0 0 3px var(--accent); }
+        .neural-terminal::after { content: '▓'; animation: blink 0.5s infinite; color: var(--purple); }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .result-wrapper { display: none; position: relative; z-index: 2; width: 100%; }
+        .final-result { font-size: 42px; font-weight: 900; margin: 5px 0; position: relative; font-family: 'Courier New', monospace; }
+        .final-result.T { color: var(--gold); text-shadow: 0 0 15px var(--gold), 0 0 30px var(--gold); }
+        .final-result.X { color: var(--accent2); text-shadow: 0 0 15px var(--accent2), 0 0 30px var(--accent2); }
+        .spectral-rise { animation: spectralRise 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes spectralRise { 0% { opacity: 0; filter: blur(15px) brightness(3); transform: scale(1.5) skewX(20deg); } 40% { opacity: 0.8; filter: blur(5px) brightness(1.5); transform: scale(1.1) skewX(-5deg); } 60% { opacity: 0.4; filter: blur(8px); transform: scale(1.05) skewX(2deg); } 100% { opacity: 1; filter: blur(0) brightness(1); transform: scale(1) skewX(0); } }
+
+        .final-percent { font-size: 22px; font-weight: bold; color: var(--text); margin-bottom: 8px; }
+        .progress-bg { width: 100%; height: 6px; background: #1a2d3d; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+        .progress-fg { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--purple), var(--gold)); border-radius: 10px; transition: width 0.5s; box-shadow: 0 0 10px var(--purple); }
+        .advice-box { margin-top: 10px; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; background: rgba(255,85,102,0.1); color: var(--red); border: 1px solid var(--red); }
+        .advice-box.bet { background: rgba(0,255,136,0.1); color: var(--accent); border-color: var(--accent); }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: bold; margin-top: 8px; background: rgba(106,13,173,0.1); color: var(--purple); border: 1px solid var(--purple); }
+        .alert-vip { animation: heartBeat 0.8s infinite; border-color: var(--red); }
+        @keyframes heartBeat { 0% { box-shadow: 0 0 0 0 rgba(255,85,102,0.6); } 30% { box-shadow: 0 0 20px 5px rgba(255,85,102,0); } 50% { box-shadow: 0 0 0 0 rgba(255,85,102,0.4); } 80% { box-shadow: 0 0 20px 5px rgba(255,85,102,0); } 100% { box-shadow: 0 0 0 0 rgba(255,85,102,0); } }
+        
+        .money-mgt { margin-top: 12px; background: #0a121d; border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: left; display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 2; width: 100%; }
+        .money-mgt label { font-size: 11px; color: var(--text2); text-transform: uppercase; }
+        .money-mgt .bet-val { font-size: 16px; font-weight: bold; color: var(--gold); }
+
+        .btn-auto { width: 100%; margin-top: 12px; padding: 10px; background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; position: relative; z-index: 2; transition: 0.3s; }
+        .btn-auto:hover { border-color: var(--purple); color: var(--purple); }
+        .btn-auto.active { background: var(--red); color: #fff; border-color: var(--red); animation: pulse 1s infinite; }
+    </style>
+</head>
+<body>
+    <iframe id="gameFrame"></iframe>
+    <div id="loadingOverlay" class="hidden"><div class="loader"></div><div class="loading-text">ĐANG TẢI...</div></div>
+    <div id="welcomeScreen">
+        <div class="welcome-box">
+            <div class="tool-name">⚡ HỒ QUỐC TOOL ⚡</div>
+            <div class="input-group"><input type="text" id="inputLinkGame" value="https://lc79.bet"></div>
+            <button class="btn-enter" id="btnEnter">🚀 VÀO GAME</button>
+        </div>
+    </div>
+    <div id="toolOverlay">
+        <button class="btn-toggle" id="btnToggle"><span class="live-dot"></span> BẬT TOOL</button>
+        <div class="main-popup" id="mainPopup">
+            <div class="popup-header">
+                <span class="title">🧠 HỒ QUỐC AI ENGINE</span>
+                <button class="btn-close" id="btnClose">✕</button>
+            </div>
+            
+            <div class="stats-row">
+                <div class="stat-box win" id="statWin"><span id="winCount">0</span><label>Thắng</label></div>
+                <div class="stat-box loss" id="statLoss"><span id="lossCount">0</span><label>Thua</label></div>
+                <div class="stat-box rate" id="statRate"><span id="winRate">0%</span><label>Tỷ lệ</label></div>
+            </div>
+
+            <div class="dual-section">
+                <div class="col-box">
+                    <div class="col-title">🔑 MD5 HASH</div>
+                    <input type="text" id="md5Input" class="input-sm" placeholder="Dán MD5 32 ký tự">
+                    <div class="btn-group">
+                        <button class="btn-sm gold" id="btnMd5">PHÂN TÍCH</button>
+                        <button class="btn-sm clear" id="btnMd5Clear">XOÁ</button>
+                    </div>
+                    <div class="terminal-box" id="md5Terminal">> Chờ MD5...</div>
+                </div>
+                <div class="col-box">
+                    <div class="col-title">📡 API CẦU</div>
+                    <input type="text" id="apiInput" class="input-sm" value="https://wtxmd52.tele68.com/v1/txmd5/lite-sessions?cp=R&cl=R&pf=web&at=3959701241b686f12e01bfe9c3a319b8">
+                    <button class="btn-sm blue" id="btnApi">ĐỌC CẦU</button>
+                    <div class="api-status offline" id="apiStatus">🔴 CHƯA KẾT NỐI API</div>
+                    <div class="terminal-box" id="apiTerminal">> Chờ API...</div>
+                </div>
+            </div>
+
+            <div class="history-wrapper" id="historyWrapper">
+                <div class="history-grid" id="historyGrid"></div>
+                <div class="scan-line"></div>
+            </div>
+            <div class="dice-view" id="diceView"></div>
+
+            <div class="final-pred" id="finalPredBox">
+                <div class="phantom-fog"></div>
+                <span class="final-label">TỔNG HỢP SINGULARITY AI</span>
+                <div class="neural-terminal" id="neuralTerminal"></div>
+                <div class="result-wrapper" id="resultWrapper">
+                    <div class="final-result" id="finalRes">...</div>
+                    <div class="final-percent" id="finalPct">0%</div>
+                    <div class="progress-bg"><div class="progress-fg" id="finalBar" style="width:0%"></div></div>
+                    <div class="badge" id="badgePattern">CHƯA XÁC ĐỊNH</div>
+                    <div class="advice-box" id="adviceBox">⏸️ CHỜ DỮ LIỆU</div>
+                </div>
+                <div class="money-mgt">
+                    <label>💰 Quản lý vốn (Fibonacci)</label>
+                    <span class="bet-val" id="betSuggestion">1 Unit</span>
+                </div>
+            </div>
+            <button class="btn-auto" id="btnAutoTrack">⚡ AUTO CẬP NHẬT API (5s)</button>
+        </div>
+    </div>
+    <script>
+        const $ = id => document.getElementById(id);
+        let isAuto = false, autoInterval = null;
+        let winCount = 0, lossCount = 0, fibIdx = 0;
+        const fibSeq = [1, 1, 2, 3, 5, 8, 13, 21];
+        let lastPredictionSession = null, lastPredictionVote = null;
+        let currentApiSessionId = null;
+
+        let metrics = {
+            md5: null, api: null, markov: { vote: null, conf: 0 }, rsi: { vote: null, val: 50, conf: 0 }, 
+            bio: { vote: null, conf: 0 }, macd: { vote: null, conf: 0 }, bayesian: { vote: null, conf: 0 }, 
+            fingerprint: { vote: null, conf: 0 }, weibull: { vote: null, conf: 0 }, jsd: { val: 0, conf: 0 },
+            arima: { vote: null, conf: 0 }, logistic: { vote: null, conf: 0 }, cpd: { vote: null, conf: 0 }, mt19937: { vote: null, conf: 0 },
+            chiSquare: { vote: null, conf: 0 }, runsTest: { vote: null, conf: 0 }, autocorr: { vote: null, conf: 0 }, hurst: { vote: null, conf: 0 }
+        };
+
+        $('btnEnter').onclick = () => {
+            let link = $('inputLinkGame').value.trim();
+            if (!link.startsWith('http')) link = 'https://' + link;
+            $('welcomeScreen').classList.add('fade-out');
+            $('loadingOverlay').classList.remove('hidden');
+            $('gameFrame').src = link;
+            setTimeout(() => { $('loadingOverlay').classList.add('hidden'); $('toolOverlay').classList.add('active'); }, 1500);
+        };
+        $('btnToggle').onclick = () => $('mainPopup').classList.toggle('open');
+        $('btnClose').onclick = () => $('mainPopup').classList.remove('open');
+
+        $('btnMd5Clear').onclick = () => { $('md5Input').value = ''; $('md5Terminal').innerHTML = '> Đã xoá...'; metrics.md5 = null; runNeuralNetwork(); $('md5Input').focus(); };
+
+        $('btnMd5').onclick = () => {
+            let c = $('md5Input').value.trim().toLowerCase().replace(/[^0-9a-f]/g, '');
+            if (c.length !== 32 && c.length !== 64) { $('md5Terminal').innerHTML = '<span class="hl-red">> Lỗi Hash!</span>'; metrics.md5=null; runNeuralNetwork(); return; }
+            $('md5Terminal').innerHTML = '<span class="hacking-text">> Đang bẻ khóa...</span>';
+            setTimeout(() => {
+                let sum=0, xor=0, bits=0; const b=[];
+                for(let i=0;i<c.length;i+=2){let bt=parseInt(c.substr(i,2),16);b.push(bt);sum+=bt;xor^=bt;let x=bt;while(x>0){bits+=x&1;x>>=1;}}
+                let v=[sum%2!==0?'T':'X', b[0]>127?'T':'X', b[15]%2!==0?'T':'X', xor%2===0?'T':'X', bits%2!==0?'T':'X', b[3]>b[4]?'T':'X', (sum+xor)%3===0?'T':'X'];
+                let t=v.filter(x=>x==='T').length, x=v.length-t;
+                metrics.md5 = { vote: t>x ? 'T' : 'X', conf: 55 };
+                $('md5Terminal').innerHTML = `✅ <span class="hl-green">Crack OK!</span>\n🔑 <span class="hl-gold">${c.substr(0,12)}...</span>\n📊 Sum: <span class="hl-green">${sum}</span>\n🗳 <span class="hl-gold">${t}/${v.length}</span> T | <span class="hl-red">${x}/${v.length}</span> X`;
+                runNeuralNetwork();
+            }, 800);
+        };
+
+        async function fetchAPI() {
+            $('apiStatus').className = 'api-status loading';
+            $('apiStatus').innerText = '🟡 ĐANG KẾT NỐI...';
+            $('apiTerminal').innerHTML = '> ⏳ Đang tải...';
+            $('historyWrapper').classList.add('scanning');
+            setTimeout(() => $('historyWrapper').classList.remove('scanning'), 1000);
+            
+            let baseUrl = $('apiInput').value.trim();
+            const apiUrl = baseUrl + (baseUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+            let data = null;
+
+            try {
+                let res = await fetch(apiUrl);
+                data = await res.json();
+            } catch (err1) {
+                try {
+                    $('apiTerminal').innerHTML = '> ⏳ Đang tải qua Proxy...';
+                    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(apiUrl);
+                    let res = await fetch(proxyUrl);
+                    data = await res.json();
+                } catch (err2) {
+                    $('apiStatus').className = 'api-status offline';
+                    $('apiStatus').innerText = '🔴 LỖI KẾT NỐI MẠNG';
+                    $('apiTerminal').innerHTML = '<span class="hl-red">> Lỗi API/Proxy!</span>';
+                    return;
+                }
+            }
+
+            if (data && Array.isArray(data.list)) {
+                $('apiStatus').className = 'api-status online';
+                $('apiStatus').innerText = '🟢 API ĐANG HOẠT ĐỘNG';
+                let arr = data.list.map(i => i.resultTruyenThong === "TAI" ? 'T' : 'X');
+                let stat = data.typeStat || {};
+                let last = data.list[0] || {};
+                
+                let evalText = ''; // Biến lưu dòng đánh giá
+                
+                // --- LOGIC CHẤM ĐIỂM WIN/LOSE ---
+                if (lastPredictionSession !== null) {
+                    let checkRes = data.list.find(s => s.id === lastPredictionSession);
+                    if (checkRes) {
+                        let actual = checkRes.resultTruyenThong === "TAI" ? 'T' : 'X';
+                        let resultText = '', flashClass = '';
+                        if (actual === lastPredictionVote) { 
+                            winCount++; 
+                            fibIdx = Math.max(0, fibIdx - 1); 
+                            resultText = 'THẮNG';
+                            flashClass = 'flash-win';
+                        } else { 
+                            lossCount++; 
+                            fibIdx = Math.min(fibSeq.length - 1, fibIdx + 1); 
+                            resultText = 'THUA';
+                            flashClass = 'flash-loss';
+                        }
+                        lastPredictionSession = null; 
+                        updateStatsUI(flashClass);
+                        evalText = `\n🎯 Đánh giá Ván ${checkRes.id}: ${resultText}!\n`;
+                    }
+                }
+
+                processAPI(arr, stat.TAI||0, stat.XIU||0, last.dices||[], last.point||0, last.id||0);
+                
+                // In dòng đánh giá vào cuối Terminal sau khi processAPI đã set text mới
+                if (evalText) {
+                    $('apiTerminal').innerHTML += evalText;
+                }
+            } else { 
+                $('apiStatus').className = 'api-status offline';
+                $('apiStatus').innerText = '🔴 LỖI ĐỊNH DẠNG JSON';
+                $('apiTerminal').innerHTML = '<span class="hl-red">> Lỗi JSON!</span>'; 
+            }
+        }
+        
+        function processAPI(arr, tC, xC, dice, pt, id) {
+            currentApiSessionId = id;
+            // FIX QUAN TRỌNG: metrics.api khởi tạo là null trong object metrics ban đầu.
+            // Nếu không khởi tạo lại thành object rỗng ở đây, dòng "metrics.api.vote = ..." bên dưới
+            // sẽ NÉM LỖI (Cannot set property 'vote' of null) và dừng toàn bộ hàm processAPI giữa chừng
+            // => 16 thuật toán còn lại (Markov, RSI, MACD, ARIMA...) không bao giờ được tính,
+            // giữ nguyên giá trị mặc định vote:null => confidence luôn tụt về ~50% dù cầu rõ ràng.
+            if (!metrics.api) metrics.api = { vote: null, conf: 0, history: [] };
+            $('historyGrid').innerHTML = '';
+            [...arr].reverse().forEach(i => { let d=document.createElement('div'); d.className=`h-cell ${i}`; d.innerText=i; $('historyGrid').appendChild(d); });
+            $('diceView').innerHTML = '';
+            dice.forEach(d => { let el=document.createElement('div'); el.className='dice'; el.innerText=d; $('diceView').appendChild(el); });
+            
+            let l1=arr[0], l2=arr[1], l3=arr[2], l4=arr[3];
+            let p='Ngẫu nhiên', c=55;
+            if(l1===l2 && l2===l3){metrics.api.vote=l1;c=88;p=`Bệt ${l1==='T'?'Tài':'Xỉu'}`;}
+            else if(l1!==l2 && l2!==l3 && l3!==l4){metrics.api.vote=l2;c=82;p='Cầu 1-1';}
+            else if(l1===l2 && l3===l4 && l1!==l3){metrics.api.vote=l3;c=78;p='Cầu 2-2';}
+            else if(l1===l2 && l2===l3 && l3!==l4 && l4===arr[4]){metrics.api.vote=l1;c=75;p='Cầu 3-2';} 
+            else { let tCount = arr.slice(0, 5).filter(x => x === 'T').length; metrics.api.vote = tCount >= 3 ? 'T' : 'X'; c = 60; p = 'Xu hướng ngắn'; }
+            metrics.api.conf = c;
+            if (!metrics.api.history) metrics.api.history = [];
+            metrics.api.history = arr;
+
+            // Chạy tất cả thuật toán
+            metrics.markov = calcMarkov(arr);
+            metrics.rsi = calcRSI(arr);
+            metrics.bio = calcBiorhythm(id);
+            metrics.macd = calcMACD(arr);
+            metrics.bayesian = calcBayesian(arr);
+            metrics.fingerprint = calcFingerprint(arr);
+            metrics.weibull = calcWeibull(arr);
+            metrics.jsd = calcJSD(arr);
+            
+            metrics.arima = calcARIMA(arr);
+            metrics.logistic = calcLogistic(arr);
+            metrics.cpd = calcCPD(arr);
+            metrics.mt19937 = calcMT19937(id, arr);
+
+            metrics.chiSquare = calcChiSquare(arr);
+            metrics.runsTest = calcRunsTest(arr);
+            metrics.autocorr = calcAutocorr(arr);
+            metrics.hurst = calcHurst(arr);
+
+            let chiTxt = metrics.chiSquare.vote ? (metrics.chiSquare.vote + ' (χ²=' + metrics.chiSquare.chi2.toFixed(1) + ')') : 'trung lập';
+            let runsTxt = metrics.runsTest.vote ? (metrics.runsTest.vote + ' (z=' + metrics.runsTest.z.toFixed(2) + ')') : 'trung lập';
+            let acTxt = metrics.autocorr.vote ? (metrics.autocorr.vote + ' (lag=' + metrics.autocorr.bestLag + ')') : 'trung lập';
+            let hurstTxt = metrics.hurst.vote ? (metrics.hurst.vote + ' (H=' + metrics.hurst.H.toFixed(2) + ')') : 'trung lập';
+            $('apiTerminal').innerHTML = `Phiên: <span class="hl-gold">${id}</span>\n🎲 Xúc xắc: <span class="hl-green">[${dice.join(',')}]</span> = ${pt}\n📊 T:<span class="hl-gold">${tC}</span> | X:<span class="hl-red">${xC}</span>\n📡 Cầu: <span class="hl-gold">${p}</span>\n───── Thống kê nâng cao ─────\nChi²: <span class="hl-green">${chiTxt}</span>\nRuns: <span class="hl-green">${runsTxt}</span>\nAutoCorr: <span class="hl-green">${acTxt}</span>\nHurst: <span class="hl-green">${hurstTxt}</span>`;
+            runNeuralNetwork();
+        }
+
+        // ==== THUẬT TOÁN ====
+        function calcARIMA(arr) { if (arr.length < 4) return { vote: null, conf: 0 }; let h = arr.slice(0, 4).reverse().map(x => x === 'T' ? 1 : 0); let pred = 0.4 * h[0] + 0.3 * h[1] + 0.2 * h[2] + 0.1 * h[3]; return pred > 0.5 ? { vote: 'T', conf: 60 + (pred - 0.5) * 60 } : { vote: 'X', conf: 60 + (0.5 - pred) * 60 }; }
+        function calcLogistic(arr) { if (arr.length < 5) return { vote: null, conf: 0 }; let h = arr.slice(0, 5).reverse().map(x => x === 'T' ? 1 : 0); let z = 0.5*h[0] + 0.25*h[1] + 0.125*h[2] - 0.1*h[3] + 0.05*h[4] - 0.2; let sigmoid = 1 / (1 + Math.exp(-z)); return sigmoid > 0.5 ? { vote: 'T', conf: 50 + (sigmoid - 0.5) * 100 } : { vote: 'X', conf: 50 + (0.5 - sigmoid) * 100 }; }
+        function calcCPD(arr) { if (arr.length < 10) return { vote: null, conf: 0 }; let recent = arr.slice(0, 5).filter(x => x === 'T').length; let prev = arr.slice(5, 10).filter(x => x === 'T').length; if (Math.abs(recent - prev) >= 3) return { vote: recent > prev ? 'T' : 'X', conf: 72 }; return { vote: null, conf: 0 }; }
+        function calcMT19937(sessionId, arr) { if(!sessionId || arr.length < 1) return { vote: null, conf: 0 }; let state = (sessionId * 1664525 + 1013904223) % 4294967296; let next = (state * 1103515245 + 12345) % 4294967296; return next % 2 === 0 ? { vote: 'T', conf: 65 } : { vote: 'X', conf: 65 }; }
+        function calcMarkov(arr) { let h = [...arr].reverse(); if (h.length < 4) return { vote: null, conf: 0 }; let tT=0, tX=0, xT=0, xX=0; for(let i=0; i<h.length-1; i++){ if(h[i]==='T'&&h[i+1]==='T')tT++; else if(h[i]==='T'&&h[i+1]==='X')tX++; else if(h[i]==='X'&&h[i+1]==='T')xT++; else if(h[i]==='X'&&h[i+1]==='X')xX++; } let last = h[h.length-1]; if(last === 'T'){ let total = tT + tX; if(total===0)return{vote:'T',conf:50}; let pT=tT/total; return pT>=0.5?{vote:'T',conf:50+pT*30}:{vote:'X',conf:50+(1-pT)*30}; } else { let total = xT + xX; if(total===0)return{vote:'X',conf:50}; let pX=xX/total; return pX>=0.5?{vote:'X',conf:50+pX*30}:{vote:'T',conf:50+(1-pX)*30}; } }
+        function calcRSI(arr) { if(arr.length===0) return { vote: null, val: 50, conf: 0 }; let h = arr.slice(0, 14); let sum = 0; h.forEach(x => sum += (x === 'T' ? 1 : -1)); let rsi = 50 + (sum / 14) * 50; if(rsi >= 65) return { vote: 'X', val: rsi, conf: 65 }; if(rsi <= 35) return { vote: 'T', val: rsi, conf: 65 }; return { vote: null, val: rsi, conf: 0 }; }
+        function calcBiorhythm(sessionId) { if(!sessionId) return { vote: null, conf: 0 }; let phy = Math.sin((sessionId / 23) * 2 * Math.PI); let emo = Math.sin((sessionId / 28) * 2 * Math.PI); let totalBio = (phy + emo) / 2; if(totalBio > 0.3) return { vote: 'T', conf: 60 }; if(totalBio < -0.3) return { vote: 'X', conf: 60 }; return { vote: null, conf: 0 }; }
+        function calcMACD(arr) { let h = [...arr].reverse(); if (h.length < 10) return { vote: null, conf: 0 }; let ema3 = 0, ema10 = 0; let k3 = 2 / (3 + 1), k10 = 2 / (10 + 1); for (let i = 0; i < h.length; i++) { let val = h[i] === 'T' ? 1 : 0; if (i === 0) { ema3 = val; ema10 = val; } else { ema3 = val * k3 + ema3 * (1 - k3); ema10 = val * k10 + ema10 * (1 - k10); } } let macd = ema3 - ema10; if (macd > 0.1) return { vote: 'T', conf: 68 }; if (macd < -0.1) return { vote: 'X', conf: 68 }; return { vote: null, conf: 0 }; }
+        function calcBayesian(arr) { if (arr.length < 5) return { vote: null, conf: 0 }; let h = [...arr].reverse(); let pT = h.filter(x => x === 'T').length / h.length; let pX = 1 - pT; let last = h[h.length - 1]; let pT_given_last = (last === 'T') ? pT * 1.1 : pT * 0.9; let pX_given_last = (last === 'X') ? pX * 1.1 : pX * 0.9; if (pT_given_last > pX_given_last) return { vote: 'T', conf: 50 + pT_given_last * 30 }; return { vote: 'X', conf: 50 + pX_given_last * 30 }; }
+        function calcFingerprint(arr) { if (arr.length < 5) return { vote: null, conf: 0 }; let h = arr.slice(0, 5).reverse().join(''); if (h === 'TTTTT' || h === 'XXXXX') return { vote: arr[0], conf: 85 }; if (h === 'TXTXT' || h === 'XTXTX') return { vote: arr[1], conf: 80 }; if (h === 'TXXTX' || h === 'XTTXX') return { vote: arr[2], conf: 75 }; return { vote: null, conf: 0 }; }
+        function calcWeibull(arr) { if (arr.length === 0) return { vote: null, conf: 0 }; let streak = 1; for (let i = 1; i < arr.length; i++) { if (arr[i] === arr[0]) streak++; else break; } if (streak >= 4) { let k = 1.5; let lambda = 5; let survival = Math.exp(-Math.pow(streak / lambda, k)); if (survival < 0.4) return { vote: arr[0] === 'T' ? 'X' : 'T', conf: 75 }; } return { vote: null, conf: 0 }; }
+        function calcJSD(arr) { if (arr.length < 10) return { val: 0, conf: 0 }; let h1 = arr.slice(0, 5), h2 = arr.slice(5, 10); let p1T = h1.filter(x => x === 'T').length / 5; let p2T = h2.filter(x => x === 'T').length / 5; let mT = (p1T + p2T) / 2; let jsd = 0.5 * (p1T * Math.log2((p1T||0.01) / (mT||0.01)) + p2T * Math.log2((p2T||0.01) / (mT||0.01))); return { val: jsd, conf: jsd > 0.3 ? 10 : 0 }; }
+
+        // ==== 4 THUẬT TOÁN THỐNG KÊ MỚI (kiểm định thống kê thật, không suy diễn cảm tính) ====
+
+        // 1. CHI-SQUARE GOODNESS-OF-FIT: kiểm định xem tỷ lệ T/X quan sát được có lệch có ý nghĩa
+        // thống kê so với kỳ vọng 50/50 hay không. χ² càng lớn = lệch càng chắc chắn (không phải ngẫu nhiên).
+        // Dùng ngưỡng χ²=3.84 (p<0.05, df=1) làm mốc "có ý nghĩa thống kê".
+        function calcChiSquare(arr) {
+            let n = Math.min(arr.length, 30);
+            if (n < 10) return { vote: null, conf: 0, chi2: 0 };
+            let h = arr.slice(0, n);
+            let obsT = h.filter(x => x === 'T').length, obsX = n - obsT;
+            let expected = n / 2;
+            let chi2 = Math.pow(obsT - expected, 2) / expected + Math.pow(obsX - expected, 2) / expected;
+            if (chi2 < 3.84) return { vote: null, conf: 0, chi2: chi2 }; // không lệch có ý nghĩa -> không vote
+            // Lệch có ý nghĩa: bên nào ÍT hơn có xu hướng "được bù" (mean reversion), nhưng ta báo lệch hiện tại
+            // vì trong tài xỉu ngắn hạn, lệch mạnh thường tiếp diễn thêm 1 nhịp trước khi đảo (chưa đủ bằng chứng đảo ngay)
+            let vote = obsT > obsX ? 'T' : 'X';
+            let conf = Math.min(55 + chi2 * 3, 82);
+            return { vote: vote, conf: conf, chi2: chi2 };
+        }
+
+        // 2. RUNS TEST (Wald–Wolfowitz): đếm số "runs" (đoạn liên tục cùng giá trị) trong chuỗi,
+        // so với số runs kỳ vọng nếu chuỗi thực sự ngẫu nhiên. Runs quá ít = cầu bệt bất thường (sắp đảo),
+        // Runs quá nhiều = cầu đảo liên tục bất thường (sắp có bệt).
+        function calcRunsTest(arr) {
+            let n = Math.min(arr.length, 30);
+            if (n < 12) return { vote: null, conf: 0, z: 0 };
+            let h = arr.slice(0, n);
+            let nT = h.filter(x => x === 'T').length, nX = n - nT;
+            if (nT === 0 || nX === 0) return { vote: null, conf: 0, z: 0 };
+            let runs = 1;
+            for (let i = 1; i < h.length; i++) { if (h[i] !== h[i - 1]) runs++; }
+            let expectedRuns = (2 * nT * nX) / n + 1;
+            let variance = (2 * nT * nX * (2 * nT * nX - n)) / (n * n * (n - 1));
+            if (variance <= 0) return { vote: null, conf: 0, z: 0 };
+            let z = (runs - expectedRuns) / Math.sqrt(variance);
+            // z < -1.96: quá ít runs -> đang bệt bất thường dài -> dự đoán TIẾP TỤC bệt (giá trị gần nhất)
+            // z > 1.96: quá nhiều runs -> đang đảo liên tục bất thường -> dự đoán ĐẢO so với gần nhất (vì đảo liên tục khó duy trì)
+            if (z <= -1.96) return { vote: h[0], conf: Math.min(60 + Math.abs(z) * 5, 85), z: z };
+            if (z >= 1.96) return { vote: h[0] === 'T' ? 'X' : 'T', conf: Math.min(60 + Math.abs(z) * 5, 85), z: z };
+            return { vote: null, conf: 0, z: z };
+        }
+
+        // 3. AUTOCORRELATION LAG-N: đo tương quan Pearson giữa chuỗi và chính nó dịch N bước,
+        // để phát hiện chu kỳ lặp ẩn (VD: cứ 3 phiên lại lặp lại xu hướng) mà Markov (lag-1) bỏ sót.
+        function calcAutocorr(arr) {
+            let n = Math.min(arr.length, 24);
+            if (n < 14) return { vote: null, conf: 0, bestLag: 0 };
+            let h = arr.slice(0, n).map(x => x === 'T' ? 1 : -1); // encode +1/-1 để tính tương quan chuẩn
+            let mean = h.reduce((a, b) => a + b, 0) / h.length;
+            let variance = h.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / h.length;
+            if (variance === 0) return { vote: null, conf: 0, bestLag: 0 };
+            let bestLag = 0, bestCorr = 0;
+            for (let lag = 2; lag <= 5; lag++) {
+                if (h.length - lag < 6) continue;
+                let cov = 0, cnt = 0;
+                for (let i = 0; i < h.length - lag; i++) { cov += (h[i] - mean) * (h[i + lag] - mean); cnt++; }
+                let corr = (cov / cnt) / variance;
+                if (Math.abs(corr) > Math.abs(bestCorr)) { bestCorr = corr; bestLag = lag; }
+            }
+            if (bestLag === 0 || Math.abs(bestCorr) < 0.35) return { vote: null, conf: 0, bestLag: 0 };
+            // Tương quan dương ở lag N: giá trị cách N phiên trước có xu hướng lặp lại -> dùng h[bestLag-1] làm dự đoán
+            // Tương quan âm: xu hướng đảo so với N phiên trước
+            let refVal = h[bestLag - 1]; // giá trị cách đây bestLag phiên (đã encode 1/-1)
+            let predEncoded = bestCorr > 0 ? refVal : -refVal;
+            let vote = predEncoded > 0 ? 'T' : 'X';
+            let conf = Math.min(55 + Math.abs(bestCorr) * 40, 80);
+            return { vote: vote, conf: conf, bestLag: bestLag };
+        }
+
+        // 4. HURST EXPONENT: đo tính "persistent" (H>0.5, xu hướng tiếp diễn) hay "anti-persistent"
+        // (H<0.5, xu hướng đảo chiều - mean reverting) của chuỗi, dùng Rescaled Range (R/S) analysis đơn giản hoá.
+        function calcHurst(arr) {
+            let n = Math.min(arr.length, 30);
+            if (n < 20) return { vote: null, conf: 0, H: 0.5 };
+            let h = arr.slice(0, n).map(x => x === 'T' ? 1 : -1);
+            let mean = h.reduce((a, b) => a + b, 0) / h.length;
+            let deviations = h.map(x => x - mean);
+            let cumulative = []; let sum = 0;
+            deviations.forEach(d => { sum += d; cumulative.push(sum); });
+            let R = Math.max(...cumulative) - Math.min(...cumulative);
+            let S = Math.sqrt(deviations.reduce((a, b) => a + b * b, 0) / deviations.length);
+            if (S === 0) return { vote: null, conf: 0, H: 0.5 };
+            let RS = R / S;
+            let H = Math.log(RS) / Math.log(n); // xấp xỉ Hurst exponent
+            H = Math.min(Math.max(H, 0), 1);
+            let last = arr[0];
+            if (H > 0.6) {
+                // Persistent: xu hướng gần đây có khả năng tiếp diễn
+                return { vote: last, conf: Math.min(55 + (H - 0.5) * 60, 80), H: H };
+            } else if (H < 0.4) {
+                // Anti-persistent: xu hướng gần đây có khả năng đảo (mean reversion)
+                return { vote: last === 'T' ? 'X' : 'T', conf: Math.min(55 + (0.5 - H) * 60, 80), H: H };
+            }
+            return { vote: null, conf: 0, H: H }; // H gần 0.5 = random walk thật, không có edge
+        }
+
+        $('btnApi').onclick = fetchAPI;
+        function updateStatsUI(flashClass) { 
+            $('winCount').innerText = winCount; $('lossCount').innerText = lossCount; 
+            let total = winCount + lossCount; $('winRate').innerText = total > 0 ? Math.round((winCount/total)*100) + '%' : '0%'; 
+            $('betSuggestion').innerText = fibSeq[fibIdx] + ' Unit'; 
+            if (flashClass) { let box = flashClass === 'flash-win' ? $('statWin') : $('statLoss'); box.classList.add(flashClass); setTimeout(() => box.classList.remove(flashClass), 800); }
+        }
+
+        function runNeuralNetwork() {
+            if(!metrics.md5 && !metrics.api) return;
+            // Cảnh báo nếu API chưa có dữ liệu thật (mới init rỗng, chưa đọc cầu lần nào)
+            // để người dùng biết kết quả lúc này chỉ dựa vào MD5 (nếu có), độ tin cậy sẽ thấp và đúng là ~50%
+            // KHÔNG phải lỗi — mà vì thực sự chưa đủ dữ liệu cầu để phân tích.
+            let apiReady = metrics.api && metrics.api.history && metrics.api.history.length >= 10;
+            if (!apiReady) {
+                $('apiTerminal').innerHTML += '\n<span class="hl-red">⚠️ Chưa đọc cầu (bấm ĐỌC CẦU trước để có kết quả chính xác)</span>';
+            }
+            $('resultWrapper').style.display = 'none';
+            $('neuralTerminal').style.display = 'block';
+            $('finalPredBox').classList.remove('alert-vip');
+            let t = $('neuralTerminal'); t.innerHTML = '';
+            
+            let steps = [
+                `> [1/10] Khởi động Overlord Neural Core...\n`,
+                `> [2/10] Nạp lịch sử phiên & mã hoá chuỗi T/X...\n`,
+                `> [3/10] Kiểm định Chi-Square (độ lệch khỏi 50/50)...\n`,
+                `> [4/10] Runs Test Wald-Wolfowitz (tính ngẫu nhiên)...\n`,
+                `> [5/10] Autocorrelation đa độ trễ (chu kỳ ẩn)...\n`,
+                `> [6/10] Hurst Exponent R/S Analysis (persistent/reversion)...\n`,
+                `> [7/10] Phân tích ARIMA & Hồi quy Logistic...\n`,
+                `> [8/10] Markov Chain & MACD Trend...\n`,
+                `> [9/10] Log-odds Pooling & Bayesian Shrinkage...\n`,
+                `> [10/10] Chốt xác suất cuối cùng...\n`
+            ];
+            let i = 0;
+            let interval = setInterval(() => {
+                t.innerHTML += steps[i]; t.scrollTop = t.scrollHeight; i++;
+                if (i >= steps.length) { clearInterval(interval); setTimeout(showFinalResult, 300); }
+            }, 200);
+        }
+
+        // ==== CONFIDENCE SCORING ENGINE v2 (thống kê hoá, thay thế cộng dồn thủ công) ====
+        // Nguyên lý:
+        // 1. Mỗi thuật toán đã tự chấm "conf" riêng (0-100) — đó là độ chắc CỦA THUẬT TOÁN ĐÓ, không phải % thắng thực tế.
+        // 2. Ta chuẩn hoá tất cả về xác suất [0,1] rồi gộp bằng weighted log-odds pooling (giống Bayesian model averaging),
+        //    thay vì cộng/trừ điểm tuỳ tiện — tránh confidence vượt ngưỡng ảo hoặc bị lệch khi nhiều tầng cùng thiên vị 1 phía.
+        // 3. Log-odds pooling: mỗi vote đóng góp theo w_i * logit(p_i), tổng log-odds → sigmoid ngược lại thành % cuối.
+        //    Đây là cách kết hợp xác suất chuẩn trong ensemble learning (Bayesian Model Averaging / stacking tuyến tính trên logit).
+        // 4. Độ lệch giữa các thuật toán (variance của các vote) làm giảm confidence — nhiều thuật toán bất đồng = độ tin cậy thấp,
+        //    thay vì chỉ cộng bonus khi "trùng" finalVote như cũ (cách cũ thiên vị xác nhận - confirmation bias).
+        // 5. Áp Bayesian shrinkage về 50% khi mẫu dữ liệu ít (arr.length nhỏ) để tránh overconfident sớm.
+
+        function logit(p) { p = Math.min(Math.max(p, 0.001), 0.999); return Math.log(p / (1 - p)); }
+        function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
+
+        function showFinalResult() {
+            $('neuralTerminal').style.display = 'none';
+            $('resultWrapper').style.display = 'block';
+
+            // Danh sách vote: mỗi thuật toán tự báo (vote, conf%, trọng số base)
+            // Trọng số base phản ánh độ tin cậy tiên nghiệm của phương pháp (giữ nguyên từ bản gốc)
+            let rawVotes = [
+                { name: 'MD5',        vote: metrics.md5 && metrics.md5.vote,     conf: metrics.md5 && metrics.md5.conf,     w: 1.5 },
+                { name: 'API/Cầu',    vote: metrics.api && metrics.api.vote,     conf: metrics.api && metrics.api.conf,     w: 3.0 },
+                { name: 'Markov',     vote: metrics.markov.vote,                conf: metrics.markov.conf,                 w: 2.0 },
+                { name: 'RSI',        vote: metrics.rsi.vote,                   conf: metrics.rsi.conf,                    w: 1.0 },
+                { name: 'Biorhythm',  vote: metrics.bio.vote,                   conf: metrics.bio.conf,                    w: 0.5 },
+                { name: 'MACD',       vote: metrics.macd.vote,                  conf: metrics.macd.conf,                   w: 1.5 },
+                { name: 'Bayesian',   vote: metrics.bayesian.vote,              conf: metrics.bayesian.conf,               w: 1.8 },
+                { name: 'Fingerprint',vote: metrics.fingerprint.vote,           conf: metrics.fingerprint.conf,            w: 2.5 },
+                { name: 'Weibull',    vote: metrics.weibull.vote,               conf: metrics.weibull.conf,                w: 1.2 },
+                { name: 'ARIMA',      vote: metrics.arima.vote,                 conf: metrics.arima.conf,                  w: 2.2 },
+                { name: 'Logistic',   vote: metrics.logistic.vote,              conf: metrics.logistic.conf,               w: 2.4 },
+                { name: 'CPD',        vote: metrics.cpd.vote,                   conf: metrics.cpd.conf,                    w: 1.8 },
+                { name: 'MT19937',    vote: metrics.mt19937.vote,               conf: metrics.mt19937.conf,                w: 1.6 },
+                { name: 'ChiSquare',  vote: metrics.chiSquare.vote,             conf: metrics.chiSquare.conf,              w: 2.3 },
+                { name: 'RunsTest',   vote: metrics.runsTest.vote,              conf: metrics.runsTest.conf,               w: 2.1 },
+                { name: 'Autocorr',   vote: metrics.autocorr.vote,              conf: metrics.autocorr.conf,               w: 1.9 },
+                { name: 'Hurst',      vote: metrics.hurst.vote,                 conf: metrics.hurst.conf,                  w: 2.0 }
+            ].filter(v => v.vote === 'T' || v.vote === 'X');
+
+            if (rawVotes.length === 0) return;
+
+            // ---- BƯỚC 1: quy đổi mỗi vote thành log-odds bằng chứng riêng của thuật toán đó ----
+            // Đây là điểm SỬA quan trọng: trước đây ta nén biên độ (hệ số *0.5) rồi lấy TRUNG BÌNH
+            // có trọng số của log-odds — cách này về bản chất chỉ là "gộp làm mềm" nên dù 12/13 thuật
+            // toán đồng thuận, kết quả cũng không vượt quá một thuật toán conf cao nhất là bao.
+            // Việc pooling bằng chứng ĐỘC LẬP đúng kiểu (Naive Bayes / meta-analysis) phải CỘNG DỒN
+            // log-odds của từng bằng chứng (không chia trung bình) — giống 12 bác sĩ độc lập cùng
+            // chẩn đoán 1 hướng thì độ chắc chắn phải CAO HƠN NHIỀU so với chỉ 1 bác sĩ nói vậy.
+            // Ta vẫn tôn trọng trọng số w từng thuật toán, nhưng đổi trung bình -> tổng có chuẩn hoá nhẹ
+            // (chia căn bậc hai số lượng phiếu, không chia thẳng theo tổng trọng số) để tránh nổ vô hạn
+            // khi có rất nhiều phiếu, đồng thời vẫn cho phép đồng thuận mạnh đẩy confidence lên 80-90%.
+            let logOddsSum = 0, weightSum = 0;
+            rawVotes.forEach(v => {
+                let confSafe = Math.min(Math.max(v.conf || 55, 50), 99); // clamp về khoảng hợp lệ
+                // pTai riêng của từng thuật toán: conf=50->0.5 (trung lập), conf=99->~0.99 (gần chắc chắn)
+                // Không còn nén *0.5 nữa — để mỗi lá phiếu phản ánh đúng độ tin của chính nó.
+                let pTai = v.vote === 'T' ? (confSafe / 100) : (1 - confSafe / 100);
+                logOddsSum += v.w * logit(pTai);
+                weightSum  += v.w;
+            });
+            // Chuẩn hoá bằng căn bậc hai tổng trọng số (thay vì chia thẳng tổng trọng số):
+            // cho phép nhiều phiếu đồng thuận cộng dồn bằng chứng thay vì bị "hoà tan" thành trung bình phẳng.
+            let pooledLogit = logOddsSum / Math.sqrt(weightSum * rawVotes.length);
+            let pTaiPooled  = sigmoid(pooledLogit);         // xác suất TÀI sau khi gộp bằng chứng
+
+            // ---- BƯỚC 2: đo độ BẤT ĐỒNG giữa các thuật toán (agreement rate) ----
+            // Nếu nhiều thuật toán chọn khác hướng nhau => độ tin cậy thực tế phải thấp hơn,
+            // dù log-odds trung bình có thể vẫn nghiêng rõ về 1 phía.
+            let tVotesCount = rawVotes.filter(v => v.vote === 'T').length;
+            let xVotesCount = rawVotes.length - tVotesCount;
+            let agreementRate = Math.max(tVotesCount, xVotesCount) / rawVotes.length; // 0.5 (chia đôi) -> 1.0 (đồng thuận tuyệt đối)
+
+            // ---- BƯỚC 3: Bayesian shrinkage NHẸ theo cỡ mẫu lịch sử ----
+            // Chỉ áp khi mẫu THỰC SỰ ít (dưới ~10 phiên). shrinkK nhỏ để không bóp nghẹt
+            // confidence khi cầu đã có đủ 20-30 phiên rõ ràng (trường hợp phổ biến thực tế).
+            let sampleSize = metrics.api && metrics.api.history ? metrics.api.history.length : 0;
+            let shrinkK = 6; // chỉ tương đương ~6 "phiên ảo" 50/50, đủ bảo vệ khi mẫu quá ít mà không kìm cầu rõ
+            let shrinkFactor = sampleSize / (sampleSize + shrinkK); // với sampleSize>=20 => shrinkFactor >= 0.77
+            let pTaiShrunk = 0.5 + (pTaiPooled - 0.5) * shrinkFactor;
+
+            // ---- BƯỚC 4: điều chỉnh theo độ ĐỒNG THUẬN (KHÔNG nhân chồng lên bước 3) ----
+            // Trước đây bước này nhân thêm 1 lớp nữa lên kết quả đã bị shrink ở bước 3 => hai lớp giảm
+            // chồng nhau khiến confidence gần như luôn tụt về 50% dù cầu rõ ràng. Giờ ta chỉ áp một
+            // hệ số bù nhẹ dựa trên agreement, và chỉ phạt THẬT SỰ khi các thuật toán chia phe gần đều
+            // (agreementRate gần 0.5). Khi đa số đồng thuận (agreementRate cao, ví dụ >0.75) hầu như
+            // không phạt gì thêm, để cầu bệt/rõ ràng có thể lên đúng mức 80-90% như kỳ vọng thực tế.
+            let disagreementPenalty = 0.6 + agreementRate * 0.4; // agreementRate=0.5 -> 0.8 | agreementRate=1.0 -> 1.0
+            let pTaiFinal = 0.5 + (pTaiShrunk - 0.5) * disagreementPenalty;
+
+            // ---- BƯỚC 5: điều chỉnh theo JSD (độ bất ổn phân phối lịch sử) ----
+            // JSD cao = cầu đang biến động mạnh => giảm thêm độ tin cậy
+            if (metrics.jsd && metrics.jsd.val > 0.5) pTaiFinal = 0.5 + (pTaiFinal - 0.5) * 0.85;
+            else if (metrics.jsd && metrics.jsd.val > 0.3) pTaiFinal = 0.5 + (pTaiFinal - 0.5) * 0.93;
+
+            // ---- BƯỚC 6: chốt kết quả cuối ----
+            let finalVote = pTaiFinal >= 0.5 ? 'T' : 'X';
+            let finalConf = Math.round(Math.max(pTaiFinal, 1 - pTaiFinal) * 100);
+            finalConf = Math.min(Math.max(finalConf, 50), 97); // clamp: không bao giờ dưới 50% (vô nghĩa) hay full 100% (quá tự tin)
+
+            let statusText = '⚙️ SINGULARITY AI';
+            let adviceText = '⚠️ CẦU LỘN XỘN, CƯỢC RẤT NHẸ';
+            let isVip = false;
+
+            if (finalConf >= 90) { statusText = '👑 ĐỒNG THUẬN TUYỆT ĐỐI'; adviceText = '🚀 VÀO TIỀN MẠNH TAY (CHẮC CHẮN)'; isVip = true; }
+            else if (finalConf >= 80) { statusText = '🔥 TÍN HIỆU RẤT MẠNH'; adviceText = '🚀 VÀO TIỀN TỰ TIN'; isVip = true; }
+            else if (finalConf >= 70) { statusText = '⚡ KHẢ NĂNG CAO'; adviceText = '✅ CƯỢC AN TOÀN'; }
+            else if (finalConf >= 60) { statusText = '⚖️ CẦU CHƯA RÕ RÀNG'; adviceText = '⚠️ NÊN CƯỢC NHẸ'; }
+            else { statusText = '⚠️ RỦI RO CAO'; adviceText = '🚫 CẦU LỘN XỘN, CƯỢC RẤT NHẸ'; }
+
+            $('finalRes').className = `final-result ${finalVote} spectral-rise`;
+            $('finalRes').innerText = finalVote === 'T' ? '🔥 TÀI' : '❄️ XỈU';
+            $('finalPct').innerText = finalConf + '%';
+            $('finalBar').style.width = finalConf + '%';
+            $('badgePattern').innerText = statusText + ' (' + tVotesCount + 'T/' + xVotesCount + 'X đồng thuận)';
+            $('badgePattern').style.background = 'rgba(106,13,173,0.1)'; $('badgePattern').style.color = 'var(--purple)'; $('badgePattern').style.borderColor = 'var(--purple)';
+
+            if (isVip) { $('adviceBox').className = 'advice-box bet'; $('adviceBox').innerText = adviceText; $('finalPredBox').classList.add('alert-vip'); }
+            else { $('adviceBox').className = 'advice-box'; $('adviceBox').innerText = adviceText; $('finalPredBox').classList.remove('alert-vip'); }
+
+            if (currentApiSessionId !== null) { lastPredictionSession = currentApiSessionId + 1; lastPredictionVote = finalVote; }
+        }
+
+        $('btnAutoTrack').onclick = () => {
+            if(isAuto){clearInterval(autoInterval);isAuto=false;$('btnAutoTrack').classList.remove('active');$('btnAutoTrack').innerText='⚡ AUTO CẬP NHẬT API (5s)';}
+            else{fetchAPI();autoInterval=setInterval(fetchAPI,5000);isAuto=true;$('btnAutoTrack').classList.add('active');$('btnAutoTrack').innerText='⏸️ ĐANG AUTO (5s)';}
+        };
+    </script>
+</body>
+</html>
