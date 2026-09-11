@@ -2,3 +2,5 @@
 #import "kexploit/sandbox_escape.h"
 #import "kexploit/kutils.h"
 #import "helpers/AppIconHelper.h"
+#import "exploit/bad_query.h"
+#import "exploit/mcm_bridge.h"
